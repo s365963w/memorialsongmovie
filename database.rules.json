@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "rooms": {
+      "memorialsong-cashflow-8f3k2x9q": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}
