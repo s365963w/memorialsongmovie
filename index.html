@@ -329,20 +329,21 @@ const PRICE_IDS  = ['price1','price2','price3','price4'];
 
 // 固定費フィールド定義
 const SGA_FIELD_DEFS = [
-  {key:'hr',     label:'人件費'},
-  {key:'office', label:'貸事務所'},
-  {key:'promo',  label:'宣材費'},
-  {key:'postage',label:'郵送料'},
-  {key:'comm',   label:'通信費'},
-  {key:'travel', label:'交通費'},
-  {key:'exped',  label:'遠征費'},
-  {key:'setup',  label:'初期設備費・その他（IT機器等）'},
-  {key:'misc',   label:'雑費予備費'},
+  {key:'hr',      label:'人件費'},
+  {key:'welfare', label:'社会保険福利厚生費'},
+  {key:'office',  label:'貸事務所'},
+  {key:'promo',   label:'宣材費'},
+  {key:'postage', label:'郵送料'},
+  {key:'comm',    label:'通信費'},
+  {key:'travel',  label:'交通費'},
+  {key:'exped',   label:'遠征費'},
+  {key:'setup',   label:'初期設備費・その他（IT機器等）'},
+  {key:'misc',    label:'雑費予備費'},
 ];
 
 // ── 初期データ（1〜7ヶ月目は指定実績値、以降は0） ──
 function emptyMonth(){
-  const m = {rate:0, hr:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0};
+  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0};
   PLAN_KEYS.forEach(k=> m[k]=0);
   return m;
 }
@@ -415,7 +416,7 @@ function buildMonthCards(){
     bodyHtml += '<div class="cat-label">販管費</div>';
     SGA_FIELD_DEFS.forEach(f=>{
       bodyHtml += '<div class="field"><label>'+f.label+'</label><div class="input-group">'+
-        '<input type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" data-m="'+i+'" data-k="'+f.key+'" class="m-input" value="'+monthsData[i][f.key]+'">'+
+        '<input type="text" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" data-m="'+i+'" data-k="'+f.key+'" class="m-input" value="'+(monthsData[i][f.key]||0)+'">'+
         '<span class="unit">万円</span></div></div>';
     });
     bodyHtml += '<div class="cat-label">外注</div>';
@@ -484,7 +485,7 @@ function render(){
     document.getElementById('salesTotal-'+i).textContent = fmtMoney(salesTotal)+' 万円';
 
     const outsourceCost = (d.outCount||0) * settings.outsourceUnitPrice / 10000;
-    const sga = (d.hr||0)+(d.office||0)+(d.promo||0)+(d.postage||0)+(d.comm||0)+
+    const sga = (d.hr||0)+(d.welfare||0)+(d.office||0)+(d.promo||0)+(d.postage||0)+(d.comm||0)+
                 (d.travel||0)+(d.exped||0)+(d.setup||0)+(d.misc||0)+outsourceCost;
     sgaArr.push(sga);
     salesArr.push(salesTotal);
