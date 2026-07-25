@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24ヶ月収支レポート</title>
+<style>
+  :root{
+    --navy:#1a3a5c;
+    --profit-green:#0a7d32;
+    --loss-red:#c62828;
+    --border:#d8d8d8;
+    --bg-result:#eef6ff;
+    --scenario-a:#1a5ca8;
+    --scenario-b:#d9720e;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;background:#fff;color:#222;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",
+      "Yu Gothic",Meiryo,sans-serif;
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:16px 16px 60px;}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    flex-wrap:wrap;margin-bottom:10px;
+  }
+  .topbar a{
+    font-size:12.5px;color:#1a5ca8;text-decoration:none;font-weight:600;
+  }
+  h1{font-size:21px;margin:4px 0;text-align:center;color:var(--navy);}
+  .subtitle{font-size:12.5px;color:#555;text-align:center;margin-bottom:14px;line-height:1.6;}
+
+  /* モード切替（シナリオA／B／比較） */
+  .mode-bar{
+    display:flex;gap:8px;justify-content:center;margin-bottom:10px;flex-wrap:wrap;
+  }
+  .mode-btn{
+    height:44px;padding:0 18px;border-radius:9px;border:2px solid #999;
+    background:#fff;color:#555;font-weight:800;font-size:13.5px;cursor:pointer;
+  }
+  .mode-btn.active-a{background:var(--scenario-a);border-color:var(--scenario-a);color:#fff;}
+  .mode-btn.active-b{background:var(--scenario-b);border-color:var(--scenario-b);color:#fff;}
+  .mode-btn.active-compare{background:#5b3a99;border-color:#5b3a99;color:#fff;}
+
+  .toolbar{
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;
+  }
+  button{
+    height:42px;padding:0 16px;font-size:13.5px;border-radius:8px;border:1px solid #999;
+    background:#fff;color:#222;font-weight:600;cursor:pointer;
+  }
+  button:active{background:#eee;}
+  .toggle-btn{border-color:#999;}
+  .toggle-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .btn-refresh{border-color:#1a5ca8;color:#1a5ca8;}
+  .btn-print{background:#ffcf3d;border-color:#e0b429;color:#1a1a1a;font-weight:800;}
+  .btn-print:active{background:#f0bf20;}
+
+  .cloud-status{font-size:11.5px;color:#777;text-align:center;margin-bottom:16px;}
+
+  /* KPIカード（単一シナリオ表示） */
+  .kpi-grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;
+  }
+  .kpi-card{border-radius:10px;padding:12px 10px;color:#fff;}
+  .kpi-card .label{font-size:11px;opacity:.9;margin-bottom:4px;}
+  .kpi-card .value{font-size:16px;font-weight:800;line-height:1.3;}
+  .kpi-navy{background:var(--navy);}
+  .kpi-green{background:var(--profit-green);}
+  .kpi-red{background:var(--loss-red);}
+
+  /* KPIカード（比較表示：A/Bペア） */
+  .kpi-compare-grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;
+  }
+  .kpi-compare-card{
+    border-radius:10px;padding:10px 10px;background:#f5f5f7;border:1px solid #ddd;
+  }
+  .kpi-compare-card .label{font-size:11px;color:#555;margin-bottom:6px;font-weight:700;}
+  .kpi-pair-row{display:flex;justify-content:space-between;align-items:baseline;padding:2px 0;}
+  .kpi-pair-row .tag{font-size:10.5px;font-weight:800;border-radius:4px;padding:1px 6px;color:#fff;}
+  .kpi-pair-row .tag.a{background:var(--scenario-a);}
+  .kpi-pair-row .tag.b{background:var(--scenario-b);}
+  .kpi-pair-row .v{font-size:13px;font-weight:800;}
+  .kpi-pair-row .v.pos{color:var(--profit-green);}
+  .kpi-pair-row .v.neg{color:var(--loss-red);}
+
+  /* グラフ */
+  .chart-box{
+    border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:22px;background:#fff;
+  }
+  .chart-box h3{font-size:13.5px;margin:0 0 8px;color:var(--navy);}
+
+  /* Excel風テーブル */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  table.xl{
+    border-collapse:collapse;width:100%;min-width:760px;font-size:12.5px;
+  }
+  table.xl.compare{min-width:920px;font-size:11.5px;}
+  table.xl caption{
+    text-align:left;font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:6px;caption-side:top;
+  }
+  table.xl th, table.xl td{
+    border:1px solid #c9d3dc;padding:6px 9px;text-align:right;white-space:nowrap;
+  }
+  table.xl thead th{
+    background:var(--navy);color:#fff;font-weight:700;text-align:center;position:sticky;top:0;
+  }
+  table.xl.compare thead tr.group-row th.grp-a{background:var(--scenario-a);}
+  table.xl.compare thead tr.group-row th.grp-b{background:var(--scenario-b);}
+  table.xl td:first-child, table.xl th:first-child{text-align:left;font-weight:600;background:#f3f6fa;}
+  table.xl tbody tr:nth-child(even) td{background:#f8fafc;}
+  table.xl tbody tr:nth-child(even) td:first-child{background:#eef2f7;}
+  table.xl tbody tr.row-breakeven td{background:#e3f5e6 !important;}
+  table.xl tbody tr.row-bottom td{background:#fbe6e6 !important;}
+  table.xl td.pos{color:var(--profit-green);font-weight:700;}
+  table.xl td.neg{color:var(--loss-red);font-weight:700;}
+  .legend-note{font-size:11px;color:#777;margin:8px 0 26px;line-height:1.6;}
+
+  .footnote{font-size:11px;color:#888;text-align:center;line-height:1.7;margin-top:10px;}
+
+  /* 印刷用スタイル */
+  @media print{
+    .topbar, .toolbar, .mode-bar, .cloud-status{display:none !important;}
+    body{padding:0;}
+    .wrap{max-width:none;padding:0;}
+    a{display:none;}
+
+    .print-page1{page-break-after: always;}
+    .print-page2{page-break-before: avoid;}
+    table.xl{page-break-inside:auto;}
+    table.xl thead{display: table-header-group;}
+    table.xl tbody tr{page-break-inside:avoid;}
+
+    .chart-box{max-height:68mm;overflow:hidden;padding:6px 10px;}
+    .kpi-card, .kpi-compare-card{padding:8px 8px;}
+    .kpi-card .value{font-size:14px;}
+    .legend-note, .footnote{margin:6px 0;}
+    table.xl{font-size:11.5px;}
+    table.xl.compare{font-size:9.6px;}
+    table.xl th, table.xl td{padding:3.6px 8px;}
+
+    body.compact-print .print-page1{page-break-after: avoid;}
+    body.compact-print .chart-box{max-height:42mm;}
+    body.compact-print .kpi-grid, body.compact-print .kpi-compare-grid{margin-bottom:8px;}
+    body.compact-print .kpi-card, body.compact-print .kpi-compare-card{padding:5px 6px;}
+    body.compact-print .kpi-card .label{font-size:9px;}
+    body.compact-print .kpi-card .value{font-size:11.5px;}
+    body.compact-print h1{font-size:15px;margin:2px 0;}
+    body.compact-print .subtitle{font-size:9.5px;margin-bottom:6px;}
+    body.compact-print table.xl{font-size:8.6px;}
+    body.compact-print table.xl.compare{font-size:7.4px;}
+    body.compact-print table.xl th, body.compact-print table.xl td{padding:1.6px 5px;}
+    body.compact-print .legend-note, body.compact-print .footnote{font-size:8px;margin:3px 0;}
+  }
+  @page{
+    size: A4 landscape;
+    margin: 10mm;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a href="./index.html">← 入力画面（トラッカー）に戻る</a>
+    <span></span>
+  </div>
+
+  <h1>24ヶ月収支レポート</h1>
+  <p class="subtitle" id="conditionLine">読み込み中…</p>
+
+  <div class="mode-bar">
+    <button class="mode-btn" id="modeBtnA" onclick="setReportMode('A')">シナリオA表示</button>
+    <button class="mode-btn" id="modeBtnB" onclick="setReportMode('B')">シナリオB表示</button>
+    <button class="mode-btn" id="modeBtnCompare" onclick="setReportMode('compare')">🆚 A・B比較</button>
+  </div>
+
+  <div class="toolbar">
+    <button class="toggle-btn active" id="btnAccrual" onclick="setViewMode('accrual')">発生ベース（計上）</button>
+    <button class="toggle-btn" id="btnCash" onclick="setViewMode('cash')">資金繰りベース（現金）</button>
+    <button class="btn-refresh" onclick="loadBothScenarios()">🔄 最新を読み込む</button>
+    <button class="btn-print" onclick="window.print()">🖨️ PDFに書き出す（印刷）</button>
+    <button class="toggle-btn" id="btnCompact" onclick="toggleCompact()">🗜️ 1ページに収める（コンパクト印刷）</button>
+  </div>
+  <div class="cloud-status" id="cloudStatus">クラウドの最新データを確認しています…</div>
+
+  <!-- ページ1：タイトル・KPI・グラフ -->
+  <div class="print-page1">
+    <div class="kpi-grid" id="kpiGrid" style="display:none;"></div>
+    <div class="kpi-compare-grid" id="kpiCompareGrid" style="display:none;"></div>
+
+    <div class="chart-box">
+      <h3 id="chartTitle">累計収支の推移（単月収支：棒／累計収支：折れ線）</h3>
+      <div id="chartWrap"></div>
+    </div>
+
+    <p class="legend-note" id="legendNote">
+      緑色の網掛け行＝黒字転換した月　／　赤色の網掛け行＝累計収支の最大赤字（ボトム）の月
+    </p>
+    <p class="footnote">
+      本レポートは事業判断の参考となる概算です。税金・借入金返済・設備投資・消費税は含まれていません。<br>
+      「資金繰りベース」は入金サイト日数をもとに売上の入金を後ろ倒しにした簡易試算です（販管費の支払いは同月発生と仮定）。<br>
+      「🖨️ PDFに書き出す」ボタンから、ブラウザの印刷機能で「PDFとして保存」を選択するとPDF化できます（横向き印刷に最適化済み）。
+    </p>
+  </div>
+
+  <!-- ページ2：月別明細テーブル -->
+  <div class="print-page2">
+    <div class="table-scroll">
+      <table class="xl" id="dataTable">
+        <caption id="tableCaption">月別 収支明細</caption>
+        <thead id="tableHead">
+          <tr><th>月</th><th>成約件数</th><th>売上</th><th>販管費</th><th>単月収支</th><th>累計収支</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script>
+const NUM_MONTHS = 24;
+const PLAN_KEYS  = ['plan1','plan2','plan3','plan4'];
+const SGA_KEYS   = ['hr','office','promo','postage','comm','travel','exped','setup','misc'];
+
+// ▼ index.html と完全に同じ設定値（データ連携のため必ず一致させる） ▼
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCmkQDBMU_GwhM7xhFfbOsNql65xDFmRJM",
+  authDomain: "memorialsong-cashflow.firebaseapp.com",
+  databaseURL: "https://memorialsong-cashflow-default-rtdb.firebaseio.com",
+  projectId: "memorialsong-cashflow"
+};
+const ROOM_ID = "memorialsong-cashflow-8f3k2x9q";
+// ▲ ここまで ▲
+
+let firebaseReady = false;
+let db = null;
+try{
+  if(FIREBASE_CONFIG.apiKey){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseReady = true;
+  }
+}catch(e){ firebaseReady = false; }
+
+let dataA = null;   // { monthsData, settings, scenarioLabel, savedAt }
+let dataB = null;
+let reportMode = 'A';   // 'A' | 'B' | 'compare'
+let viewMode = 'accrual';
+
+function monthLabel(i){ return i===0 ? '1ヶ月目（準備月）' : (i+1)+'ヶ月目'; }
+function fmt(n, digits){
+  if(digits===undefined) digits=0;
+  if(!isFinite(n)) n=0;
+  return n.toLocaleString('ja-JP',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
+function fmtMoney(n){
+  if(!isFinite(n)) n=0;
+  const digits = Number.isInteger(Math.round(n*10)/10) ? 0 : 1;
+  return n.toLocaleString('ja-JP',{minimumFractionDigits:digits,maximumFractionDigits:1});
+}
+function setCloudStatus(text){ document.getElementById('cloudStatus').textContent = text; }
+
+let compactMode = false;
+function toggleCompact(){
+  compactMode = !compactMode;
+  document.body.classList.toggle('compact-print', compactMode);
+  document.getElementById('btnCompact').classList.toggle('active', compactMode);
+  document.getElementById('btnCompact').textContent = compactMode
+    ? '📄 通常印刷（2ページ）に戻す'
+    : '🗜️ 1ページに収める（コンパクト印刷）';
+}
+
+function loadBothScenarios(){
+  if(!firebaseReady){
+    setCloudStatus('クラウド未接続のため、データを表示できません。');
+    return;
+  }
+  setCloudStatus('読み込み中…');
+  const pA = db.ref('rooms/' + ROOM_ID + '/scenarios/A/data').get();
+  const pB = db.ref('rooms/' + ROOM_ID + '/scenarios/B/data').get();
+  Promise.all([pA, pB]).then(([snapA, snapB])=>{
+    dataA = snapA.exists() ? snapA.val() : null;
+    dataB = snapB.exists() ? snapB.val() : null;
+
+    const parts = [];
+    parts.push('A：' + (dataA ? formatSavedAt(dataA.savedAt) : '未保存'));
+    parts.push('B：' + (dataB ? formatSavedAt(dataB.savedAt) : '未保存'));
+    setCloudStatus(parts.join('　｜　') + '（トラッカーと連携中）');
+
+    render();
+  }).catch(err=>{
+    setCloudStatus('読み込みに失敗しました：' + err.message);
+  });
+}
+
+function formatSavedAt(iso){
+  if(!iso) return '不明';
+  const d = new Date(iso);
+  return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function scenarioTitle(scn, data){
+  const label = data && data.scenarioLabel ? data.scenarioLabel : '';
+  return label ? `シナリオ${scn}（${label}）` : `シナリオ${scn}`;
+}
+
+function setReportMode(mode){
+  reportMode = mode;
+  document.getElementById('modeBtnA').className = 'mode-btn' + (mode==='A' ? ' active-a' : '');
+  document.getElementById('modeBtnB').className = 'mode-btn' + (mode==='B' ? ' active-b' : '');
+  document.getElementById('modeBtnCompare').className = 'mode-btn' + (mode==='compare' ? ' active-compare' : '');
+  render();
+}
+
+function setViewMode(mode){
+  viewMode = mode;
+  document.getElementById('btnAccrual').classList.toggle('active', mode==='accrual');
+  document.getElementById('btnCash').classList.toggle('active', mode==='cash');
+  render();
+}
+
+// ── 1シナリオ分の計算（index.html の render() と同一ロジック） ──
+function computeScenario(data){
+  if(!data || !data.monthsData){ return null; }
+  const monthsData = data.monthsData;
+  const settings = data.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+  const lagMonths = Math.max(0, Math.ceil((settings.paymentLagDays||0)/30));
+  const prices = settings.prices || [1,3,5,10];
+  const sgaArr=[], salesArr=[], countArr=[];
+
+  for(let i=0;i<NUM_MONTHS;i++){
+    const d = monthsData[i] || {};
+    let salesTotal=0, countTotal=0;
+    PLAN_KEYS.forEach((k,pi)=>{
+      const c = d[k]||0;
+      salesTotal += c*(prices[pi]||0);
+      countTotal += c;
+    });
+    let sga = 0;
+    SGA_KEYS.forEach(k=> sga += d[k]||0);
+    sga += (d.outCount||0) * (settings.outsourceUnitPrice||0) / 10000;
+    sgaArr.push(sga);
+    salesArr.push(salesTotal);
+    countArr.push(countTotal);
+  }
+
+  const accrualBal = salesArr.map((s,i)=> s - sgaArr[i]);
+  const accrualCum = []; let run=0;
+  accrualBal.forEach(v=>{ run+=v; accrualCum.push(run); });
+
+  const cashIn = new Array(NUM_MONTHS).fill(0);
+  for(let i=0;i<NUM_MONTHS;i++){
+    const src = i - lagMonths;
+    cashIn[i] = src>=0 ? salesArr[src] : 0;
+  }
+  const cashBal = cashIn.map((c,i)=> c - sgaArr[i]);
+  const cashCum = []; run=0;
+  cashBal.forEach(v=>{ run+=v; cashCum.push(run); });
+
+  const useSales = viewMode==='accrual' ? salesArr : cashIn;
+  const useBal   = viewMode==='accrual' ? accrualBal : cashBal;
+  const useCum   = viewMode==='accrual' ? accrualCum : cashCum;
+
+  let beMonth = null;
+  for(let i=0;i<NUM_MONTHS;i++){ if(useCum[i]>=0){ beMonth=i; break; } }
+  let worstIdx=0, worstVal=useCum[0];
+  useCum.forEach((v,i)=>{ if(v<worstVal){worstVal=v; worstIdx=i;} });
+
+  return {
+    settings, sgaArr, salesArr, countArr, useSales, useBal, useCum,
+    totalSales: useSales.reduce((a,b)=>a+b,0),
+    totalSga: sgaArr.reduce((a,b)=>a+b,0),
+    finalCum: useCum[NUM_MONTHS-1],
+    beMonth, worstIdx, worstVal
+  };
+}
+
+function render(){
+  document.getElementById('kpiGrid').style.display = 'none';
+  document.getElementById('kpiCompareGrid').style.display = 'none';
+
+  if(reportMode === 'compare'){
+    renderCompare();
+  } else {
+    renderSingle(reportMode === 'A' ? dataA : dataB, reportMode);
+  }
+}
+
+// ── 単一シナリオ表示 ──
+function renderSingle(data, scn){
+  document.getElementById('kpiGrid').style.display = '';
+  const r = computeScenario(data);
+
+  if(!r){
+    document.getElementById('conditionLine').textContent = `シナリオ${scn}：まだ保存データがありません。トラッカーで保存してください。`;
+    document.getElementById('kpiGrid').innerHTML = '';
+    document.getElementById('chartWrap').innerHTML = '';
+    document.getElementById('tableBody').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('conditionLine').textContent =
+    `${scenarioTitle(scn, data)}　｜　表示モード：${viewMode==='accrual'?'発生ベース':'資金繰りベース'}　｜　入金サイト：${r.settings.paymentLagDays}日　｜　単価：低価格${r.settings.prices[0]}万／標準${r.settings.prices[1]}万／上位${r.settings.prices[2]}万／プレミアム${r.settings.prices[3]}万`;
+  document.getElementById('tableCaption').textContent = `月別 収支明細（${scenarioTitle(scn, data)}）`;
+  document.getElementById('chartTitle').textContent =
+    `累計収支の推移（${scenarioTitle(scn,data)}・${viewMode==='accrual'?'発生ベース':'資金繰りベース'}）`;
+  document.getElementById('legendNote').textContent =
+    '緑色の網掛け行＝黒字転換した月　／　赤色の網掛け行＝累計収支の最大赤字（ボトム）の月';
+
+  const kpis = [
+    ['累計売上', fmtMoney(r.totalSales)+' 万円', 'kpi-navy'],
+    ['累計販管費', fmtMoney(r.totalSga)+' 万円', 'kpi-navy'],
+    ['累計収支（24ヶ月後）', (r.finalCum>=0?'+':'')+fmtMoney(r.finalCum)+' 万円', r.finalCum>=0?'kpi-green':'kpi-red'],
+    ['黒字転換した月', r.beMonth===null ? '未達（24ヶ月以内になし）' : monthLabel(r.beMonth), r.beMonth===null?'kpi-red':'kpi-green'],
+    ['累計収支のボトム', monthLabel(r.worstIdx)+' ／ '+fmtMoney(r.worstVal)+'万円', 'kpi-red'],
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(([label,val,cls])=>
+    `<div class="kpi-card ${cls}"><div class="label">${label}</div><div class="value">${val}</div></div>`
+  ).join('');
+
+  document.getElementById('tableHead').innerHTML =
+    '<tr><th>月</th><th>成約件数</th><th>売上</th><th>販管費</th><th>単月収支</th><th>累計収支</th></tr>';
+
+  let rows = '';
+  for(let i=0;i<NUM_MONTHS;i++){
+    const rowClass = (r.beMonth===i) ? ' class="row-breakeven"' : (r.worstIdx===i ? ' class="row-bottom"' : '');
+    rows += `<tr${rowClass}>`+
+      `<td>${monthLabel(i)}</td>`+
+      `<td>${fmt(r.countArr[i])}件</td>`+
+      `<td>${fmtMoney(r.useSales[i])}万円</td>`+
+      `<td>${fmtMoney(r.sgaArr[i])}万円</td>`+
+      `<td class="${r.useBal[i]>=0?'pos':'neg'}">${fmtMoney(r.useBal[i])}万円</td>`+
+      `<td class="${r.useCum[i]>=0?'pos':'neg'}">${fmtMoney(r.useCum[i])}万円</td>`+
+    `</tr>`;
+  }
+  document.getElementById('tableBody').innerHTML = rows;
+  document.getElementById('dataTable').className = 'xl';
+
+  drawSingleChart(r.useBal, r.useCum);
+}
+
+// ── A・B比較表示 ──
+function renderCompare(){
+  document.getElementById('kpiCompareGrid').style.display = '';
+  const rA = computeScenario(dataA);
+  const rB = computeScenario(dataB);
+
+  document.getElementById('conditionLine').textContent =
+    `A・B比較　｜　表示モード：${viewMode==='accrual'?'発生ベース':'資金繰りベース'}　｜　${scenarioTitle('A',dataA)} vs ${scenarioTitle('B',dataB)}`;
+  document.getElementById('tableCaption').textContent = '月別 収支明細（A・B比較）';
+  document.getElementById('chartTitle').textContent =
+    `累計収支の推移比較（${viewMode==='accrual'?'発生ベース':'資金繰りベース'}）`;
+  document.getElementById('legendNote').textContent =
+    '青＝シナリオA　／　オレンジ＝シナリオB　の累計収支推移';
+
+  if(!rA && !rB){
+    document.getElementById('kpiCompareGrid').innerHTML = '<p style="grid-column:1/-1;color:#888;">どちらのシナリオもまだ保存データがありません。</p>';
+    document.getElementById('chartWrap').innerHTML = '';
+    document.getElementById('tableBody').innerHTML = '';
+    return;
+  }
+
+  function pairRow(label, valA, valB, clsFn){
+    const ca = clsFn ? clsFn(rA) : '';
+    const cb = clsFn ? clsFn(rB) : '';
+    return `<div class="kpi-compare-card">
+      <div class="label">${label}</div>
+      <div class="kpi-pair-row"><span class="tag a">A</span><span class="v ${ca}">${valA}</span></div>
+      <div class="kpi-pair-row"><span class="tag b">B</span><span class="v ${cb}">${valB}</span></div>
+    </div>`;
+  }
+
+  const kpiHtml = [
+    pairRow('累計売上',
+      rA ? fmtMoney(rA.totalSales)+'万円' : '—',
+      rB ? fmtMoney(rB.totalSales)+'万円' : '—'),
+    pairRow('累計販管費',
+      rA ? fmtMoney(rA.totalSga)+'万円' : '—',
+      rB ? fmtMoney(rB.totalSga)+'万円' : '—'),
+    pairRow('累計収支（24ヶ月後）',
+      rA ? fmtMoney(rA.finalCum)+'万円' : '—',
+      rB ? fmtMoney(rB.finalCum)+'万円' : '—',
+      r=> r && r.finalCum>=0 ? 'pos' : 'neg'),
+    pairRow('黒字転換した月',
+      rA ? (rA.beMonth===null?'未達':monthLabel(rA.beMonth)) : '—',
+      rB ? (rB.beMonth===null?'未達':monthLabel(rB.beMonth)) : '—',
+      r=> r && r.beMonth!==null ? 'pos' : 'neg'),
+    pairRow('累計収支のボトム',
+      rA ? monthLabel(rA.worstIdx)+' / '+fmtMoney(rA.worstVal)+'万円' : '—',
+      rB ? monthLabel(rB.worstIdx)+' / '+fmtMoney(rB.worstVal)+'万円' : '—',
+      ()=> 'neg'),
+  ].join('');
+  document.getElementById('kpiCompareGrid').innerHTML = kpiHtml;
+
+  // 比較テーブル
+  document.getElementById('tableHead').innerHTML =
+    '<tr class="group-row"><th>月</th>'+
+    '<th class="grp-a">売上(A)</th><th class="grp-a">単月(A)</th><th class="grp-a">累計(A)</th>'+
+    '<th class="grp-b">売上(B)</th><th class="grp-b">単月(B)</th><th class="grp-b">累計(B)</th></tr>';
+
+  let rows = '';
+  for(let i=0;i<NUM_MONTHS;i++){
+    const aBe = rA && rA.beMonth===i, aBt = rA && rA.worstIdx===i;
+    const bBe = rB && rB.beMonth===i, bBt = rB && rB.worstIdx===i;
+    const rowClass = (aBe||bBe) ? ' class="row-breakeven"' : ((aBt||bBt) ? ' class="row-bottom"' : '');
+    rows += `<tr${rowClass}><td>${monthLabel(i)}</td>`+
+      `<td>${rA?fmtMoney(rA.useSales[i])+'万円':'—'}</td>`+
+      `<td class="${rA?(rA.useBal[i]>=0?'pos':'neg'):''}">${rA?fmtMoney(rA.useBal[i])+'万円':'—'}</td>`+
+      `<td class="${rA?(rA.useCum[i]>=0?'pos':'neg'):''}">${rA?fmtMoney(rA.useCum[i])+'万円':'—'}</td>`+
+      `<td>${rB?fmtMoney(rB.useSales[i])+'万円':'—'}</td>`+
+      `<td class="${rB?(rB.useBal[i]>=0?'pos':'neg'):''}">${rB?fmtMoney(rB.useBal[i])+'万円':'—'}</td>`+
+      `<td class="${rB?(rB.useCum[i]>=0?'pos':'neg'):''}">${rB?fmtMoney(rB.useCum[i])+'万円':'—'}</td>`+
+    `</tr>`;
+  }
+  document.getElementById('tableBody').innerHTML = rows;
+  document.getElementById('dataTable').className = 'xl compare';
+
+  drawCompareChart(rA ? rA.useCum : null, rB ? rB.useCum : null);
+}
+
+// ── グラフ：単一シナリオ（棒＋折れ線） ──
+function drawSingleChart(balArr, cumArr){
+  const w = 1000, h = 320, padL=64, padR=24, padT=16, padB=36;
+  const innerW = w-padL-padR, innerH = h-padT-padB;
+  const maxCum = Math.max(0, ...cumArr), minCum = Math.min(0, ...cumArr);
+  const rangeCum = (maxCum-minCum) || 1;
+  const maxBal = Math.max(0, ...balArr), minBal = Math.min(0, ...balArr);
+  const rangeBal = (maxBal-minBal) || 1;
+
+  const xFor = i => padL + (i/(NUM_MONTHS-1))*innerW;
+  const yForCum = v => padT + innerH - ((v-minCum)/rangeCum)*innerH;
+  const yForBal = v => padT + innerH - ((v-minBal)/rangeBal)*innerH;
+  const zeroYCum = yForCum(0), zeroYBal = yForBal(0);
+
+  let bars = '';
+  const barW = innerW/NUM_MONTHS*0.55;
+  balArr.forEach((v,i)=>{
+    const x = xFor(i) - barW/2;
+    const y0 = zeroYBal, y1 = yForBal(v);
+    const top = Math.min(y0,y1), height = Math.abs(y1-y0);
+    const color = v>=0 ? "#a8d5b0" : "#f0b0ac";
+    bars += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(height,0.5).toFixed(1)}" fill="${color}"/>`;
+  });
+
+  let path = '';
+  cumArr.forEach((v,i)=>{ const x=xFor(i), y=yForCum(v); path += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' '; });
+  let dots = '';
+  cumArr.forEach((v,i)=> dots += `<circle cx="${xFor(i).toFixed(1)}" cy="${yForCum(v).toFixed(1)}" r="3.2" fill="#1a5ca8"/>`);
+  let xlabels = '';
+  for(let i=0;i<NUM_MONTHS;i++) xlabels += `<text x="${xFor(i).toFixed(1)}" y="${h-14}" font-size="10" fill="#888" text-anchor="middle">${i+1}</text>`;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">`;
+  svg += bars;
+  svg += `<line x1="${padL}" y1="${zeroYCum.toFixed(1)}" x2="${w-padR}" y2="${zeroYCum.toFixed(1)}" stroke="#c62828" stroke-width="1" stroke-dasharray="5,4"/>`;
+  svg += `<text x="4" y="${(zeroYCum+4).toFixed(1)}" font-size="10" fill="#c62828">0</text>`;
+  svg += `<path d="${path.trim()}" fill="none" stroke="#1a5ca8" stroke-width="2.6"/>`;
+  svg += dots;
+  svg += xlabels;
+  svg += `<text x="${w/2}" y="${h-2}" font-size="10" fill="#666" text-anchor="middle">経過月数</text>`;
+  svg += `<rect x="${padL}" y="${padT}" width="14" height="8" fill="#a8d5b0"/><text x="${padL+18}" y="${padT+8}" font-size="10" fill="#555">単月収支（黒字）</text>`;
+  svg += `<rect x="${padL+120}" y="${padT}" width="14" height="8" fill="#f0b0ac"/><text x="${padL+138}" y="${padT+8}" font-size="10" fill="#555">単月収支（赤字）</text>`;
+  svg += `<line x1="${padL+250}" y1="${padT+4}" x2="${padL+270}" y2="${padT+4}" stroke="#1a5ca8" stroke-width="2.6"/><text x="${padL+276}" y="${padT+8}" font-size="10" fill="#555">累計収支</text>`;
+  svg += `</svg>`;
+  document.getElementById('chartWrap').innerHTML = svg;
+}
+
+// ── グラフ：A・B比較（累計収支の折れ線を2本重ねる） ──
+function drawCompareChart(cumA, cumB){
+  const w = 1000, h = 320, padL=64, padR=24, padT=16, padB=36;
+  const innerW = w-padL-padR, innerH = h-padT-padB;
+
+  const all = [...(cumA||[]), ...(cumB||[]), 0];
+  const maxV = Math.max(...all), minV = Math.min(...all);
+  const range = (maxV-minV) || 1;
+
+  const xFor = i => padL + (i/(NUM_MONTHS-1))*innerW;
+  const yFor = v => padT + innerH - ((v-minV)/range)*innerH;
+  const zeroY = yFor(0);
+
+  function pathFor(arr){
+    let p = '';
+    arr.forEach((v,i)=>{ const x=xFor(i), y=yFor(v); p += (i===0?'M':'L')+x.toFixed(1)+','+y.toFixed(1)+' '; });
+    return p.trim();
+  }
+  function dotsFor(arr, color){
+    let d = '';
+    arr.forEach((v,i)=> d += `<circle cx="${xFor(i).toFixed(1)}" cy="${yFor(v).toFixed(1)}" r="3" fill="${color}"/>`);
+    return d;
+  }
+
+  let xlabels = '';
+  for(let i=0;i<NUM_MONTHS;i++) xlabels += `<text x="${xFor(i).toFixed(1)}" y="${h-14}" font-size="10" fill="#888" text-anchor="middle">${i+1}</text>`;
+
+  let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${w-padR}" y2="${zeroY.toFixed(1)}" stroke="#c62828" stroke-width="1" stroke-dasharray="5,4"/>`;
+  svg += `<text x="4" y="${(zeroY+4).toFixed(1)}" font-size="10" fill="#c62828">0</text>`;
+  if(cumA){ svg += `<path d="${pathFor(cumA)}" fill="none" stroke="#1a5ca8" stroke-width="2.8"/>`; svg += dotsFor(cumA, "#1a5ca8"); }
+  if(cumB){ svg += `<path d="${pathFor(cumB)}" fill="none" stroke="#d9720e" stroke-width="2.8" stroke-dasharray="7,4"/>`; svg += dotsFor(cumB, "#d9720e"); }
+  svg += xlabels;
+  svg += `<text x="${w/2}" y="${h-2}" font-size="10" fill="#666" text-anchor="middle">経過月数</text>`;
+  svg += `<line x1="${padL}" y1="${padT+4}" x2="${padL+20}" y2="${padT+4}" stroke="#1a5ca8" stroke-width="2.8"/><text x="${padL+26}" y="${padT+8}" font-size="10" fill="#555">シナリオA 累計収支</text>`;
+  svg += `<line x1="${padL+170}" y1="${padT+4}" x2="${padL+190}" y2="${padT+4}" stroke="#d9720e" stroke-width="2.8" stroke-dasharray="7,4"/><text x="${padL+196}" y="${padT+8}" font-size="10" fill="#555">シナリオB 累計収支</text>`;
+  svg += `</svg>`;
+  document.getElementById('chartWrap').innerHTML = svg;
+}
+
+setReportMode('A');
+loadBothScenarios();
+</script>
+</body>
+</html>
