@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>収支推移トラッカー</title>
+<title>収支推移トラッカー v2.0</title>
 <style>
   :root{
     --profit-green:#0a7d32;
@@ -249,7 +249,7 @@
   <!-- 統一ページヘッダー：データ保存（左）／タイトル／更新（右） -->
   <div class="page-header">
     <button class="hdr-btn hdr-btn-left" onclick="confirmSave()">💾 データ保存</button>
-    <h1 class="hdr-title">収支推移トラッカー</h1>
+    <h1 class="hdr-title">収支推移トラッカー v2.0</h1>
     <button class="hdr-btn hdr-btn-right" onclick="confirmLoad()">🔄 更新</button>
   </div>
 
@@ -681,7 +681,7 @@ function resetAll(){
 }
 
 function copyResults(){
-  const lines = ['【24ヶ月収支推移トラッカー】表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
+  const lines = ['【24ヶ月収支推移トラッカー v2.0】表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
   lines.push('入金サイト: '+document.getElementById('paymentLagDays').value+'日 / 外注単価: '+document.getElementById('outsourceUnitPrice').value+'円');
   lines.push('単価：低価格'+document.getElementById('price1').value+'万 / 標準'+document.getElementById('price2').value+'万 / 上位'+document.getElementById('price3').value+'万 / プレミアム'+document.getElementById('price4').value+'万');
   lines.push('');
