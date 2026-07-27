@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>24ヶ月収支推移トラッカー</title>
+<title>収支推移トラッカー</title>
 <style>
   :root{
     --profit-green:#0a7d32;
@@ -19,9 +19,8 @@
     margin:0;padding:0;background:#fff;color:#222;
     font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",
       "Yu Gothic",Meiryo,sans-serif;
-    overflow-x:hidden;width:100%;
   }
-  .wrap{max-width:560px;margin:0 auto;padding:16px 12px 60px;}
+  .wrap{max-width:1140px;margin:0 auto;padding:16px 16px 60px;}
   h1{font-size:19px;line-height:1.4;margin:4px 0;text-align:center;}
   .subtitle{font-size:12.5px;color:#555;text-align:center;margin-bottom:16px;line-height:1.6;}
   h2.section-h2{font-size:15px;margin:26px 0 10px;padding-bottom:6px;border-bottom:2px solid #333;}
@@ -57,13 +56,17 @@
     overflow-x:auto;-webkit-overflow-scrolling:touch;
     border:1px solid var(--border);border-radius:10px;margin-bottom:16px;
   }
-  table.summary{border-collapse:collapse;width:100%;min-width:640px;font-size:12px;}
+  table.summary{border-collapse:collapse;width:100%;min-width:420px;font-size:11.5px;table-layout:fixed;}
   table.summary th, table.summary td{
-    padding:6px 8px;text-align:right;white-space:nowrap;border-bottom:1px solid #eee;
+    padding:5px 4px;text-align:right;white-space:nowrap;border-bottom:1px solid #eee;
+    overflow:hidden;text-overflow:ellipsis;
   }
-  table.summary th{background:#333;color:#fff;position:sticky;top:0;font-weight:600;font-size:11.5px;}
+  table.summary th{background:#333;color:#fff;position:sticky;top:0;font-weight:600;font-size:10.5px;}
+  table.summary th:first-child, table.summary td:first-child{
+    width:38px;max-width:38px;text-align:center;
+  }
   table.summary td:first-child, table.summary th:first-child{
-    text-align:left;position:sticky;left:0;background:#f7f7f7;z-index:1;font-weight:600;
+    text-align:center;position:sticky;left:0;background:#f7f7f7;z-index:1;font-weight:600;
   }
   table.summary th:first-child{background:#333;z-index:2;}
   table.summary tr:nth-child(even) td{background:#fafafa;}
@@ -123,20 +126,25 @@
     background:#fff;color:#222;font-weight:600;-webkit-tap-highlight-color:transparent;
   }
   button:active{background:#eee;}
-  .action-row{display:flex;gap:10px;margin-top:16px;}
-  .action-row button{flex:1;}
+  .action-row{display:flex;gap:8px;margin-top:12px;width:100%;}
+  .action-row button{flex:1;min-width:0;height:46px;font-size:13px;padding:0 6px;}
+  .action-row-3 button, .action-row-2 button{flex:1 1 0;}
+  .hdr-btn-left-style{
+    background:#ffcf3d;border:1px solid #e0b429;color:#1a1a1a;font-weight:800;border-radius:10px;
+  }
+  .hdr-btn-left-style:active{background:#f0bf20;}
   .btn-danger{border-color:var(--loss-red);color:var(--loss-red);}
   .btn-primary{border-color:var(--profit-green);color:var(--profit-green);}
 
-  /* シナリオ切替（2軸運用） */
+  /* シナリオ切替（6軸運用：A〜F） */
   .scenario-bar{
     background:#fff3d6;border:1px solid #f0c96a;border-radius:10px;
     padding:10px 12px;margin-bottom:12px;
   }
-  .scenario-tabs{display:flex;gap:8px;margin-bottom:8px;}
+  .scenario-tabs{display:flex;gap:4px;margin-bottom:8px;}
   .scenario-tab{
-    flex:1;height:44px;border-radius:8px;border:2px solid #d99a00;
-    background:#fff;color:#8a6300;font-weight:800;font-size:14px;
+    flex:1;height:38px;min-width:0;border-radius:7px;border:2px solid #d99a00;
+    background:#fff;color:#8a6300;font-weight:800;font-size:14px;padding:0;
   }
   .scenario-tab.active{background:#d99a00;color:#fff;}
   .scenario-label-row{display:flex;align-items:center;gap:6px;}
@@ -186,43 +194,95 @@
     opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:100;white-space:nowrap;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* 共通：確認ダイアログ */
+  .confirm-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .confirm-overlay.show{display:flex;}
+  .confirm-box{
+    background:#fff;border-radius:14px;padding:22px 20px;max-width:320px;width:100%;
+    box-shadow:0 8px 30px rgba(0,0,0,.25);text-align:center;
+  }
+  .confirm-box p{font-size:14.5px;color:#222;margin:0 0 18px;line-height:1.6;}
+  .confirm-buttons{display:flex;gap:10px;}
+  .confirm-buttons button{flex:1;height:46px;border-radius:10px;font-size:15px;font-weight:700;border:none;}
+  .confirm-yes{background:#1a5ca8;color:#fff;}
+  .confirm-no{background:#eee;color:#444;}
+
+  /* 統一ページヘッダー（全ページ共通：左ボタン／タイトル／右ボタン） */
+  .page-header{
+    position:sticky;top:0;z-index:70;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;
+    background:var(--navy,#1a3a5c);padding:8px 6px;border-radius:0 0 12px 12px;
+    margin:0 -12px 10px;
+  }
+  .page-header .hdr-title{
+    flex:1;text-align:center;font-size:17px;margin:0;color:#fff;font-weight:800;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .hdr-btn{
+    flex:0 0 auto;height:38px;padding:0 10px;border-radius:8px;border:none;
+    font-weight:800;font-size:12px;white-space:nowrap;
+  }
+  .hdr-btn-left{background:#ffcf3d;color:#1a1a1a;}
+  .hdr-btn-left:active{background:#f0bf20;}
+  .hdr-btn-right{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6) !important;}
+  .hdr-btn-right:active{background:rgba(255,255,255,.15);}
+
+  /* 共通：5ページ間ナビゲーション */
+  .site-nav{
+    display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    padding:2px 2px 10px;margin-bottom:8px;
+  }
+  .site-nav a{
+    flex:0 0 auto;font-size:11.5px;font-weight:700;text-decoration:none;
+    padding:7px 11px;border-radius:8px;border:1.5px solid #ccc;color:#555;white-space:nowrap;
+  }
+  .site-nav a.current{background:var(--navy,#1a3a5c);border-color:var(--navy,#1a3a5c);color:#fff;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>24ヶ月収支推移トラッカー</h1>
+  <!-- 統一ページヘッダー：データ保存（左）／タイトル／更新（右） -->
+  <div class="page-header">
+    <button class="hdr-btn hdr-btn-left" onclick="confirmSave()">💾 データ保存</button>
+    <h1 class="hdr-title">収支推移トラッカー</h1>
+    <button class="hdr-btn hdr-btn-right" onclick="confirmLoad()">🔄 更新</button>
+  </div>
+
+  <div class="site-nav">
+    <a href="./index.html" class="current">📝 トラッカー</a>
+    <a href="./report.html">📊 レポート</a>
+    <a href="./compare1.html">🆚 比較①</a>
+    <a href="./compare2.html">🆚 比較②</a>
+    <a href="./compare3.html">🆚 比較③</a>
+  </div>
+
+  <div class="cloud-status" id="cloudStatus">起動中…</div>
+
   <p class="subtitle">プラン別の成約数を入力すると、売上・単月収支・累計収支を自動計算します。<br>スマートフォンでの入力に最適化しています。</p>
 
-  <!-- シナリオ切替（2軸運用） -->
+  <!-- シナリオ切替（6軸運用） -->
   <div class="scenario-bar">
     <div class="scenario-tabs">
-      <button class="scenario-tab active" id="tabA" onclick="switchScenario('A')">シナリオA</button>
-      <button class="scenario-tab" id="tabB" onclick="switchScenario('B')">シナリオB</button>
+      <button class="scenario-tab active" id="tabA" onclick="switchScenario('A')">A</button>
+      <button class="scenario-tab" id="tabB" onclick="switchScenario('B')">B</button>
+      <button class="scenario-tab" id="tabC" onclick="switchScenario('C')">C</button>
+      <button class="scenario-tab" id="tabD" onclick="switchScenario('D')">D</button>
+      <button class="scenario-tab" id="tabE" onclick="switchScenario('E')">E</button>
+      <button class="scenario-tab" id="tabF" onclick="switchScenario('F')">F</button>
     </div>
     <div class="scenario-label-row">
-      <span class="scenario-label-prefix">名称：</span>
+      <span class="scenario-label-prefix">メモ</span>
       <input type="text" id="scenarioLabel" placeholder="例：現実的ケース" maxlength="20">
     </div>
   </div>
 
-  <!-- クラウド共有保存バー -->
-  <div class="cloud-bar">
-    <div class="cloud-bar-buttons">
-      <button class="btn-save-cloud" onclick="saveToCloud()">💾 保存</button>
-      <button class="btn-load-cloud" onclick="loadFromCloud()">🔄 更新</button>
-    </div>
-    <div class="cloud-status" id="cloudStatus">起動中…</div>
-  </div>
-
-  <div style="text-align:center;margin:-6px 0 16px;">
-    <a href="./report.html" style="display:inline-block;font-size:12.5px;color:#1a5ca8;font-weight:700;text-decoration:none;border:1px solid #1a5ca8;border-radius:8px;padding:8px 14px;">
-      📊 グラフ付きレポートを見る（PDF書き出し対応・A/B比較対応）
-    </a>
-  </div>
-
   <!-- 設定 -->
-  <div class="section" id="sec-settings">
+  <div class="section closed" id="sec-settings">
     <div class="section-header" onclick="toggleSection('sec-settings')">
       <h2>設定（単価・入金サイト・外注単価）</h2><span class="chevron">▼</span>
     </div>
@@ -297,20 +357,35 @@
   <h2 class="section-h2">月別 詳細入力（タップで開閉）</h2>
   <div id="monthCards"></div>
 
-  <div class="action-row">
+  <div class="action-row action-row-3">
     <button class="btn-primary" onclick="copyResults()">結果をコピー</button>
-    <button class="btn-danger" onclick="resetAll()">全データをリセット</button>
+    <button class="toggle-btn" onclick="confirmCsvExport()">CSV保存</button>
+    <button class="toggle-btn" onclick="triggerCsvImport()">CSV取込</button>
   </div>
+  <div class="action-row action-row-2">
+    <button class="hdr-btn-left-style" onclick="confirmSave()">💾 保存</button>
+    <button class="btn-danger" onclick="confirmReset()">全データをリセット</button>
+  </div>
+  <input type="file" id="csvFileInput" accept=".csv" style="display:none;" onchange="handleCsvFile(event)">
 
   <div class="note-box">
     本トラッカーは事業判断の参考となる概算です。税金、借入金返済、設備投資、消費税は含まれていません。<br>
     「資金繰りベース」は、入金サイト日数を30日単位で切り上げて月数換算し、その分だけ売上の現金化を後ろ倒しにして試算した簡易モデルです（販管費の支払いは同月発生と仮定）。実際の入金条件（締め日・支払サイト）に応じて再調整してください。
   </div>
-  <p class="subtitle">入力内容はこの端末のブラウザ内にのみ保存されます（個人情報は保存されません）。</p>
 
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p id="confirmMessage"></p>
+    <div class="confirm-buttons">
+      <button class="confirm-yes" onclick="confirmYes()">はい</button>
+      <button class="confirm-no" onclick="confirmNo()">いいえ</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
@@ -525,7 +600,7 @@ function render(){
   let rows = '';
   for(let i=0;i<NUM_MONTHS;i++){
     rows += '<tr>'+
-      '<td>'+monthLabel(i)+'</td>'+
+      '<td title="'+monthLabel(i)+'">'+(i+1)+'</td>'+
       '<td>'+fmt(countArr[i])+'</td>'+
       '<td>'+fmtMoney(useSalesDisp[i])+'</td>'+
       '<td>'+fmtMoney(sgaArr[i])+'</td>'+
@@ -557,7 +632,7 @@ function render(){
 }
 
 function drawChart(cumArr){
-  const w = 320, h = 140, padL=40, padR=8, padT=10, padB=20;
+  const w = 320, h = 30, padL=32, padR=6, padT=4, padB=10;
   const innerW = w-padL-padR, innerH = h-padT-padB;
   const maxV = Math.max(0, ...cumArr);
   const minV = Math.min(0, ...cumArr);
@@ -573,24 +648,26 @@ function drawChart(cumArr){
   });
 
   let svg = '<svg viewBox="0 0 '+w+' '+h+'" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">';
-  svg += '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(w-padR)+'" y2="'+zeroY+'" stroke="#c62828" stroke-width="1" stroke-dasharray="4,3"/>';
-  svg += '<text x="2" y="'+(zeroY+4)+'" font-size="9" fill="#c62828">0</text>';
-  for(let i=0;i<NUM_MONTHS;i+=3){
+  svg += '<line x1="'+padL+'" y1="'+zeroY+'" x2="'+(w-padR)+'" y2="'+zeroY+'" stroke="#c62828" stroke-width="0.8" stroke-dasharray="3,2"/>';
+  svg += '<text x="1" y="'+(zeroY+2.5)+'" font-size="5" fill="#c62828">0</text>';
+  for(let i=0;i<NUM_MONTHS;i+=6){
     const x = xFor(i);
-    svg += '<text x="'+x.toFixed(1)+'" y="'+(h-6)+'" font-size="8" fill="#888" text-anchor="middle">'+(i+1)+'M</text>';
+    svg += '<text x="'+x.toFixed(1)+'" y="'+(h-2)+'" font-size="4.5" fill="#888" text-anchor="middle">'+(i+1)+'M</text>';
   }
-  svg += '<path d="'+path.trim()+'" fill="none" stroke="#1a5ca8" stroke-width="2"/>';
+  svg += '<path d="'+path.trim()+'" fill="none" stroke="#1a5ca8" stroke-width="1.4"/>';
   cumArr.forEach((v,i)=>{
-    if(i%3===0 || i===NUM_MONTHS-1){
-      svg += '<circle cx="'+xFor(i).toFixed(1)+'" cy="'+yFor(v).toFixed(1)+'" r="2.2" fill="#1a5ca8"/>';
+    if(i%6===0 || i===NUM_MONTHS-1){
+      svg += '<circle cx="'+xFor(i).toFixed(1)+'" cy="'+yFor(v).toFixed(1)+'" r="1.3" fill="#1a5ca8"/>';
     }
   });
   svg += '</svg>';
   document.getElementById('chartWrap').innerHTML = svg;
 }
 
+function confirmReset(){
+  showConfirm('24ヶ月分の入力内容をすべて初期値に戻しますか？', resetAll);
+}
 function resetAll(){
-  if(!confirm('24ヶ月分の入力内容をすべて初期値に戻します。よろしいですか？')) return;
   suppressSave = true;
   monthsData = buildDefaultMonths();
   document.getElementById('paymentLagDays').value = 30;
@@ -735,6 +812,94 @@ function scenarioDisplayName(){
   return custom ? ('シナリオ' + currentScenario + '（' + custom + '）') : ('シナリオ' + currentScenario);
 }
 
+// ── 共通：確認ダイアログ ──
+let _confirmCallback = null;
+function showConfirm(message, onYes){
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmOverlay').classList.add('show');
+  _confirmCallback = onYes;
+}
+function confirmYes(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  const cb = _confirmCallback;
+  _confirmCallback = null;
+  if(cb) cb();
+}
+function confirmNo(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  _confirmCallback = null;
+}
+
+function confirmSave(){
+  showConfirm(scenarioDisplayName() + 'をクラウドに保存しますか？', saveToCloud);
+}
+function confirmLoad(){
+  showConfirm(scenarioDisplayName() + 'の最新データに更新しますか？\n（現在の未保存の変更は上書きされます）', ()=>loadFromCloud(false));
+}
+
+// ── CSV保存／取込 ──
+function confirmCsvExport(){
+  showConfirm(scenarioDisplayName() + 'のデータをCSVとして保存しますか？', csvExport);
+}
+const CSV_COLUMNS = ['month','rate','plan1','plan2','plan3','plan4','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount'];
+function csvExport(){
+  const lines = [CSV_COLUMNS.join(',')];
+  for(let i=0;i<NUM_MONTHS;i++){
+    const d = monthsData[i] || {};
+    const row = CSV_COLUMNS.map(k=> k==='month' ? (i+1) : (d[k]||0));
+    lines.push(row.join(','));
+  }
+  const csv = lines.join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cashflow24m_scenario' + currentScenario + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('CSVを保存しました。');
+}
+
+function triggerCsvImport(){
+  document.getElementById('csvFileInput').click();
+}
+function handleCsvFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const text = e.target.result;
+      const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+      const header = lines[0].split(',');
+      const newMonths = [];
+      for(let i=0;i<NUM_MONTHS;i++) newMonths.push(emptyMonth());
+      for(let r=1;r<lines.length;r++){
+        const cells = lines[r].split(',');
+        const monthNum = parseInt(cells[header.indexOf('month')],10);
+        if(!monthNum || monthNum<1 || monthNum>NUM_MONTHS) continue;
+        const idx = monthNum - 1;
+        CSV_COLUMNS.forEach(k=>{
+          if(k==='month') return;
+          const ci = header.indexOf(k);
+          if(ci>=0) newMonths[idx][k] = parseFloat(cells[ci]) || 0;
+        });
+      }
+      monthsData = newMonths;
+      buildMonthCards();
+      render();
+      showToast('CSVを読み込みました。');
+    }catch(err){
+      showToast('CSVの読み込みに失敗しました');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+
 function saveToCloud(){
   if(!firebaseReady){
     setCloudStatus('クラウド未設定です（Firebase設定値を入力してください）', true);
@@ -801,12 +966,14 @@ function updateSavedInfo(data){
 }
 
 // 指定シナリオを画面に読み込む（初回起動・タブ切替の両方から呼ばれる）
+const ALL_SCENARIOS = ['A','B','C','D','E','F'];
 function loadScenario(scenario){
   currentScenario = scenario;
 
   // タブの見た目を更新
-  document.getElementById('tabA').classList.toggle('active', scenario==='A');
-  document.getElementById('tabB').classList.toggle('active', scenario==='B');
+  ALL_SCENARIOS.forEach(s=>{
+    document.getElementById('tab'+s).classList.toggle('active', scenario===s);
+  });
   document.getElementById('scenarioLabel').value = loadScenarioLabel(scenario);
 
   // このシナリオのデフォルト値からスタートし、ローカルキャッシュがあれば上書き
