@@ -436,7 +436,9 @@ function computeScenario(data){
     });
     let sga = 0;
     SGA_KEYS.forEach(k=> sga += d[k]||0);
-    sga += (d.outCount||0) * (settings.outsourceUnitPrice||0) / 10000;
+    // 外注金額を直接使用。未設定（旧データ）の場合のみ 本数×@3000円 で補完
+    const outAmount = (d.outAmount !== undefined && d.outAmount !== null) ? d.outAmount : (d.outCount||0)*3000;
+    sga += outAmount / 10000;
     sgaArr.push(sga);
     salesArr.push(salesTotal);
     countArr.push(countTotal);

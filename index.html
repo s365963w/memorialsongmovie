@@ -313,10 +313,17 @@
         </div>
       </div>
       <div class="field">
-        <label>外注単価（1本あたり）</label>
+        <label>外注単価（1本あたり）<br><small style="color:#888;font-size:11px;">既存データの金額補完・目安として使用</small></label>
         <div class="input-group">
           <input type="number" inputmode="numeric" min="0" step="100" id="outsourceUnitPrice" value="3000">
           <span class="unit">円</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>参考：実績の平均単価<br><small style="color:#888;font-size:11px;">24ヶ月の合計金額÷合計本数（実績ベース・自動計算）</small></label>
+        <div class="input-group">
+          <span class="readonly" id="avgOutsourcePrice">-</span>
+          <span class="unit">円/本</span>
         </div>
       </div>
     </div>
@@ -418,7 +425,7 @@ const SGA_FIELD_DEFS = [
 
 // ── 初期データ（1〜7ヶ月目は指定実績値、以降は0） ──
 function emptyMonth(){
-  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0};
+  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
   PLAN_KEYS.forEach(k=> m[k]=0);
   return m;
 }
@@ -427,21 +434,21 @@ function buildDefaultMonths(){
   for(let i=0;i<NUM_MONTHS;i++) m.push(emptyMonth());
 
   // 1ヶ月目＝準備月
-  Object.assign(m[0], {hr:150,office:10,promo:15,postage:5,comm:15,travel:10,exped:10,setup:50,misc:20,outCount:0});
+  Object.assign(m[0], {hr:150,office:10,promo:15,postage:5,comm:15,travel:10,exped:10,setup:50,misc:20,outCount:0,outAmount:0});
 
   const base = {office:10,promo:15,postage:5,comm:15,travel:10,exped:10,setup:0};
   // 2ヶ月目：低価格40本
-  Object.assign(m[1], base, {hr:150,misc:10,outCount:0, plan1:40});
+  Object.assign(m[1], base, {hr:150,misc:10,outCount:0, outAmount:0, plan1:40});
   // 3ヶ月目：低価格80本
-  Object.assign(m[2], base, {hr:150,misc:10,outCount:0, plan1:80});
-  // 4ヶ月目：低価格120本
-  Object.assign(m[3], base, {hr:150,misc:10,outCount:20, plan1:120});
+  Object.assign(m[2], base, {hr:150,misc:10,outCount:0, outAmount:0, plan1:80});
+  // 4ヶ月目：低価格120本（外注20本×@3000円＝60,000円をデフォルト設定）
+  Object.assign(m[3], base, {hr:150,misc:10,outCount:20, outAmount:20*3000, plan1:120});
   // 5ヶ月目：低価格150＋標準10（1万×150＋3万×10＝180万、計160件）
-  Object.assign(m[4], base, {hr:150,misc:10,outCount:60, plan1:150, plan2:10});
+  Object.assign(m[4], base, {hr:150,misc:10,outCount:60, outAmount:60*3000, plan1:150, plan2:10});
   // 6ヶ月目：低価格180＋標準15＋上位5（180＋45＋25＝250万、計200件）
-  Object.assign(m[5], base, {hr:150,misc:10,outCount:100, plan1:180, plan2:15, plan3:5});
+  Object.assign(m[5], base, {hr:150,misc:10,outCount:100, outAmount:100*3000, plan1:180, plan2:15, plan3:5});
   // 7ヶ月目：低価格210＋標準20＋上位10（210＋60＋50＝320万、計240件）
-  Object.assign(m[6], base, {hr:150,misc:10,outCount:140, plan1:210, plan2:20, plan3:10});
+  Object.assign(m[6], base, {hr:150,misc:10,outCount:140, outAmount:140*3000, plan1:210, plan2:20, plan3:10});
 
   return m;
 }
@@ -496,8 +503,11 @@ function buildMonthCards(){
     });
     bodyHtml += '<div class="cat-label">外注</div>';
     bodyHtml += '<div class="field"><label>外注本数</label><div class="input-group">'+
-      '<input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-k="outCount" class="m-input" value="'+monthsData[i].outCount+'">'+
+      '<input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-k="outCount" class="m-input" value="'+(monthsData[i].outCount||0)+'">'+
       '<span class="unit">本</span></div></div>';
+    bodyHtml += '<div class="field"><label>外注金額</label><div class="input-group">'+
+      '<input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-k="outAmount" class="m-input" value="'+(monthsData[i].outAmount||0)+'">'+
+      '<span class="unit">円</span></div></div>';
 
     bodyHtml += '<div class="cat-label">計算結果</div>';
     bodyHtml += '<div class="field"><label>販管費計</label><div class="input-group"><span class="readonly" id="sga-'+i+'">-</span><span class="unit">万円</span></div></div>';
@@ -539,6 +549,7 @@ function render(){
   const lagMonths = Math.max(0, Math.ceil(settings.paymentLagDays/30));
 
   const sgaArr=[], salesArr=[], balArr=[], countArr=[];
+  let totalOutCount = 0, totalOutAmount = 0;
   for(let i=0;i<NUM_MONTHS;i++){
     const d = monthsData[i];
 
@@ -559,7 +570,12 @@ function render(){
     document.getElementById('countTotal-'+i).textContent = fmt(countTotal)+' 件';
     document.getElementById('salesTotal-'+i).textContent = fmtMoney(salesTotal)+' 万円';
 
-    const outsourceCost = (d.outCount||0) * settings.outsourceUnitPrice / 10000;
+    if((d.outCount||0) > 0){
+      totalOutCount += (d.outCount||0);
+      totalOutAmount += (d.outAmount||0);
+    }
+
+    const outsourceCost = (d.outAmount||0) / 10000;
     const sga = (d.hr||0)+(d.welfare||0)+(d.office||0)+(d.promo||0)+(d.postage||0)+(d.comm||0)+
                 (d.travel||0)+(d.exped||0)+(d.setup||0)+(d.misc||0)+outsourceCost;
     sgaArr.push(sga);
@@ -567,6 +583,10 @@ function render(){
     countArr.push(countTotal);
     document.getElementById('sga-'+i).textContent = fmtMoney(sga);
   }
+
+  const avgOutsourcePrice = totalOutCount > 0 ? (totalOutAmount / totalOutCount) : 0;
+  document.getElementById('avgOutsourcePrice').textContent =
+    totalOutCount > 0 ? fmt(Math.round(avgOutsourcePrice)) : '実績なし';
 
   const accrualBal = salesArr.map((s,i)=> s - sgaArr[i]);
   const accrualCum = []; let run=0;
@@ -681,7 +701,7 @@ function resetAll(){
 }
 
 function copyResults(){
-  const lines = ['【24ヶ月収支推移トラッカー v2.0】表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
+  const lines = ['【24ヶ月収支推移トラッカー】表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
   lines.push('入金サイト: '+document.getElementById('paymentLagDays').value+'日 / 外注単価: '+document.getElementById('outsourceUnitPrice').value+'円');
   lines.push('単価：低価格'+document.getElementById('price1').value+'万 / 標準'+document.getElementById('price2').value+'万 / 上位'+document.getElementById('price3').value+'万 / プレミアム'+document.getElementById('price4').value+'万');
   lines.push('');
@@ -715,12 +735,25 @@ function saveToStorage(){
     localStorage.setItem(storageKey(), JSON.stringify({ monthsData, settings, viewMode }));
   }catch(e){}
 }
+// 既存データ互換：outAmount(外注金額)が未設定の月は、
+// 従来の前提単価@3000円で自動補完する（既存の外注費実績を変えないため）
+const LEGACY_OUTSOURCE_UNIT_PRICE = 3000;
+function normalizeMonthsData(arr){
+  if(!Array.isArray(arr)) return arr;
+  arr.forEach(d=>{
+    if(d && (d.outAmount === undefined || d.outAmount === null)){
+      d.outAmount = (d.outCount||0) * LEGACY_OUTSOURCE_UNIT_PRICE;
+    }
+  });
+  return arr;
+}
+
 function loadFromStorage(){
   try{
     const raw = localStorage.getItem(storageKey());
     if(!raw) return false;
     const data = JSON.parse(raw);
-    if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = data.monthsData;
+    if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = normalizeMonthsData(data.monthsData);
     if(data.settings) settings = data.settings;
     if(data.viewMode) viewMode = data.viewMode;
     return true;
@@ -841,7 +874,7 @@ function confirmLoad(){
 function confirmCsvExport(){
   showConfirm(scenarioDisplayName() + 'のデータをCSVとして保存しますか？', csvExport);
 }
-const CSV_COLUMNS = ['month','rate','plan1','plan2','plan3','plan4','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount'];
+const CSV_COLUMNS = ['month','rate','plan1','plan2','plan3','plan4','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount','outAmount'];
 function csvExport(){
   const lines = [CSV_COLUMNS.join(',')];
   for(let i=0;i<NUM_MONTHS;i++){
@@ -874,8 +907,13 @@ function handleCsvFile(event){
       const text = e.target.result;
       const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
       const header = lines[0].split(',');
+      const hasAmountColumn = header.indexOf('outAmount') >= 0;
       const newMonths = [];
-      for(let i=0;i<NUM_MONTHS;i++) newMonths.push(emptyMonth());
+      for(let i=0;i<NUM_MONTHS;i++){
+        const m = emptyMonth();
+        if(!hasAmountColumn) m.outAmount = undefined; // 旧形式CSV：正規化で自動補完させる
+        newMonths.push(m);
+      }
       for(let r=1;r<lines.length;r++){
         const cells = lines[r].split(',');
         const monthNum = parseInt(cells[header.indexOf('month')],10);
@@ -887,7 +925,7 @@ function handleCsvFile(event){
           if(ci>=0) newMonths[idx][k] = parseFloat(cells[ci]) || 0;
         });
       }
-      monthsData = newMonths;
+      monthsData = normalizeMonthsData(newMonths);
       buildMonthCards();
       render();
       showToast('CSVを読み込みました。');
@@ -934,7 +972,7 @@ function loadFromCloud(silent){
   db.ref(cloudPath()).get().then(snap=>{
     if(snap.exists()){
       const data = snap.val();
-      if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = data.monthsData;
+      if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = normalizeMonthsData(data.monthsData);
       if(data.settings) settings = data.settings;
       if(data.viewMode) viewMode = data.viewMode;
       suppressSave = true;
