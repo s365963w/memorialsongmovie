@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>表計算シート</title>
+<style>
+  :root{
+    --navy:#1a3a5c;
+    --profit-green:#0a7d32;
+    --loss-red:#c62828;
+    --border:#d8d8d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;background:#fff;color:#222;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",
+      "Yu Gothic",Meiryo,sans-serif;
+  }
+  .wrap{max-width:1140px;margin:0 auto;padding:16px 16px 60px;}
+  h1{font-size:20px;margin:4px 0;text-align:center;color:var(--navy);}
+  .subtitle{font-size:12px;color:#555;text-align:center;margin-bottom:14px;line-height:1.6;}
+
+  /* 統一ページヘッダー */
+  .page-header{
+    position:sticky;top:0;z-index:70;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;
+    background:var(--navy);padding:8px 6px;border-radius:0 0 12px 12px;
+    margin:0 0 10px;
+  }
+  .page-header .hdr-title{
+    flex:1;text-align:center;font-size:17px;margin:0;color:#fff;font-weight:800;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .hdr-btn{
+    flex:0 0 auto;height:38px;padding:0 10px;border-radius:8px;border:none;
+    font-weight:800;font-size:12px;white-space:nowrap;
+  }
+  .hdr-btn-left{background:#ffcf3d;color:#1a1a1a;}
+  .hdr-btn-left:active{background:#f0bf20;}
+  .hdr-btn-right{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.6) !important;}
+  .hdr-btn-right:active{background:rgba(255,255,255,.15);}
+
+  /* 共通：5ページ間ナビゲーション */
+  .site-nav{
+    display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    padding:2px 2px 10px;margin-bottom:8px;
+  }
+  .site-nav a{
+    flex:0 0 auto;font-size:11.5px;font-weight:700;text-decoration:none;
+    padding:7px 11px;border-radius:8px;border:1.5px solid #ccc;color:#555;white-space:nowrap;
+  }
+  .site-nav a.current{background:var(--navy);border-color:var(--navy);color:#fff;}
+
+  .cloud-status{font-size:11.5px;color:#777;text-align:center;margin-bottom:14px;}
+
+  /* 設定アコーディオン（シナリオ別） */
+  .section{
+    background:#f7f7f7;border:1px solid var(--border);border-radius:10px;
+    padding:10px 12px 4px;margin-bottom:14px;
+  }
+  .section-header{
+    display:flex;justify-content:space-between;align-items:center;
+    cursor:pointer;padding-bottom:8px;
+  }
+  .section-header h2{margin:0;font-size:14px;color:var(--navy);}
+  .chevron{font-size:13px;color:#666;transition:transform .15s ease;}
+  .section.closed .chevron{transform:rotate(-90deg);}
+  .section.closed .section-body{display:none;}
+
+  .settings-row{
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    padding:8px 6px;border-bottom:1px solid #e7e7e7;
+  }
+  .settings-row:last-child{border-bottom:none;}
+  .settings-row .badge{
+    width:26px;height:26px;border-radius:6px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:13px;color:#fff;
+  }
+  .settings-row input[type=text], .settings-row input[type=number]{
+    height:34px;border-radius:6px;border:1px solid #bbb;padding:0 6px;font-size:12px;
+    text-align:center;background:#fff;color:#111;width:64px;
+  }
+  .settings-row input.memo{width:100px;text-align:left;}
+  .settings-row .sf-label{font-size:9.5px;color:#888;display:block;text-align:center;}
+
+  /* シナリオ切替タブ（シート表示フィルター） */
+  .scn-filter{
+    display:flex;gap:5px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  }
+  .scn-filter button{
+    flex:0 0 auto;height:36px;padding:0 12px;border-radius:8px;border:2px solid #ccc;
+    background:#fff;color:#555;font-weight:800;font-size:12.5px;
+  }
+  .scn-filter button.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .scn-filter button.scn-color-A.active{background:#1a5ca8;border-color:#1a5ca8;}
+  .scn-filter button.scn-color-B.active{background:#d9720e;border-color:#d9720e;}
+  .scn-filter button.scn-color-C.active{background:#0a7d32;border-color:#0a7d32;}
+  .scn-filter button.scn-color-D.active{background:#7d3c98;border-color:#7d3c98;}
+  .scn-filter button.scn-color-E.active{background:#c62828;border-color:#c62828;}
+  .scn-filter button.scn-color-F.active{background:#555;border-color:#555;}
+
+  /* シナリオ絞り込み：非選択シナリオの行を非表示 */
+  .table-scroll.filter-A tr[data-scn]:not([data-scn="A"]){display:none;}
+  .table-scroll.filter-B tr[data-scn]:not([data-scn="B"]){display:none;}
+  .table-scroll.filter-C tr[data-scn]:not([data-scn="C"]){display:none;}
+  .table-scroll.filter-D tr[data-scn]:not([data-scn="D"]){display:none;}
+  .table-scroll.filter-E tr[data-scn]:not([data-scn="E"]){display:none;}
+  .table-scroll.filter-F tr[data-scn]:not([data-scn="F"]){display:none;}
+
+  /* Excel風テーブル */
+  .table-scroll{
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--border);border-radius:10px;
+    max-height:70vh;overflow-y:auto;
+  }
+  table.sheet{border-collapse:collapse;font-size:11px;min-width:1300px;}
+  table.sheet th, table.sheet td{
+    border:1px solid #d5dbe2;padding:3px 4px;text-align:right;white-space:nowrap;
+  }
+  table.sheet thead th{
+    background:var(--navy);color:#fff;font-weight:700;text-align:center;
+    position:sticky;top:0;z-index:20;font-size:10px;
+  }
+  table.sheet thead th.ro-head{background:#3d5a7a;}
+  table.sheet td.sticky-scn, table.sheet th.sticky-scn{
+    position:sticky;left:0;z-index:15;width:26px;max-width:26px;text-align:center;
+  }
+  table.sheet th.sticky-scn{z-index:25;}
+  table.sheet td.sticky-month, table.sheet th.sticky-month{
+    position:sticky;left:26px;z-index:12;width:26px;max-width:26px;text-align:center;
+    background:#eef2f7;font-weight:700;
+  }
+  table.sheet th.sticky-month{z-index:25;background:var(--navy);}
+  table.sheet input.cell{
+    width:46px;border:none;background:transparent;text-align:right;font-size:11px;
+    padding:2px;color:#111;
+  }
+  table.sheet input.cell:focus{outline:2px solid #4a90d9;background:#fff;}
+  table.sheet td.ro{background:#f5f7fa;color:#333;font-weight:600;}
+  table.sheet td.pos{color:var(--profit-green);}
+  table.sheet td.neg{color:var(--loss-red);}
+  table.sheet tr.scn-A td.sticky-scn{background:#1a5ca8;color:#fff;}
+  table.sheet tr.scn-B td.sticky-scn{background:#d9720e;color:#fff;}
+  table.sheet tr.scn-C td.sticky-scn{background:#0a7d32;color:#fff;}
+  table.sheet tr.scn-D td.sticky-scn{background:#7d3c98;color:#fff;}
+  table.sheet tr.scn-E td.sticky-scn{background:#c62828;color:#fff;}
+  table.sheet tr.scn-F td.sticky-scn{background:#555;color:#fff;}
+  tr.scn-first-row td{border-top:2.5px solid #333;}
+
+  .legend{font-size:11px;color:#666;text-align:center;margin:10px 0;line-height:1.6;}
+  .legend .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 3px 0 8px;vertical-align:middle;}
+
+  .footnote{font-size:11px;color:#888;text-align:center;line-height:1.7;margin-top:16px;}
+
+  /* 確認ダイアログ */
+  .confirm-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .confirm-overlay.show{display:flex;}
+  .confirm-box{
+    background:#fff;border-radius:14px;padding:22px 20px;max-width:320px;width:100%;
+    box-shadow:0 8px 30px rgba(0,0,0,.25);text-align:center;
+  }
+  .confirm-box p{font-size:14.5px;color:#222;margin:0 0 18px;line-height:1.6;white-space:pre-line;}
+  .confirm-buttons{display:flex;gap:10px;}
+  .confirm-buttons button{flex:1;height:46px;border-radius:10px;font-size:15px;font-weight:700;border:none;}
+  .confirm-yes{background:#1a5ca8;color:#fff;}
+  .confirm-no{background:#eee;color:#444;}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#222;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;
+    opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:100;white-space:nowrap;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  /* ── SP表示最適化：縦向き（portrait）／横向き（landscape） ── */
+  @media (orientation: portrait){
+    .table-scroll{max-height:60vh;}
+    table.sheet{font-size:10px;min-width:1150px;}
+    table.sheet th, table.sheet td{padding:2.5px 3px;}
+    .wrap{padding-left:8px;padding-right:8px;}
+  }
+  @media (orientation: landscape){
+    .table-scroll{max-height:80vh;}
+    table.sheet{font-size:11.5px;min-width:1300px;}
+  }
+  @media (orientation: landscape) and (max-height: 500px){
+    /* スマホを横向きにした際：画面が低いため、ヘッダー等を圧縮して表を優先表示 */
+    .page-header{padding:5px 6px;}
+    .page-header .hdr-title{font-size:14px;}
+    .hdr-btn{height:32px;font-size:11px;padding:0 8px;}
+    .site-nav, .subtitle, .cloud-status{display:none;}
+    .scn-filter{margin-bottom:6px;}
+    .table-scroll{max-height:75vh;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-header">
+    <button class="hdr-btn hdr-btn-left" onclick="confirmSaveAll()">💾 データ保存</button>
+    <h1 class="hdr-title">表計算シート</h1>
+    <button class="hdr-btn hdr-btn-right" onclick="confirmRefreshAll()">🔄 更新</button>
+  </div>
+
+  <div class="site-nav">
+    <a href="./index.html">📝 トラッカー</a>
+    <a href="./report.html">📊 レポート</a>
+    <a href="./compare1.html">🆚 比較①</a>
+    <a href="./compare2.html">🆚 比較②</a>
+    <a href="./compare3.html">🆚 比較③</a>
+    <a href="./sheet.html" class="current">📋 表計算シート</a>
+  </div>
+
+  <div class="cloud-status" id="cloudStatus">クラウドの最新データを確認しています…</div>
+  <p class="subtitle">全シナリオ（A〜F）×24ヶ月を1つの表で編集できます。セルに直接入力し、「💾 データ保存」で全シナリオまとめて保存します。</p>
+
+  <!-- シナリオ表示切替 -->
+  <div class="scn-filter" id="scnFilter">
+    <button class="active" data-filter="all" onclick="setScenarioFilter('all')">全て表示</button>
+    <button class="scn-color-A" data-filter="A" onclick="setScenarioFilter('A')">A</button>
+    <button class="scn-color-B" data-filter="B" onclick="setScenarioFilter('B')">B</button>
+    <button class="scn-color-C" data-filter="C" onclick="setScenarioFilter('C')">C</button>
+    <button class="scn-color-D" data-filter="D" onclick="setScenarioFilter('D')">D</button>
+    <button class="scn-color-E" data-filter="E" onclick="setScenarioFilter('E')">E</button>
+    <button class="scn-color-F" data-filter="F" onclick="setScenarioFilter('F')">F</button>
+  </div>
+
+  <!-- シナリオ別設定 -->
+  <div class="section closed" id="sec-settings">
+    <div class="section-header" onclick="toggleSection('sec-settings')">
+      <h2>シナリオ別 設定（メモ・単価・入金サイト・外注単価）</h2><span class="chevron">▼</span>
+    </div>
+    <div class="section-body" id="settingsBody"></div>
+  </div>
+
+  <div class="table-scroll" id="tableScroll">
+    <table class="sheet" id="sheetTable">
+      <thead>
+        <tr>
+          <th class="sticky-scn">S</th>
+          <th class="sticky-month">月</th>
+          <th>成約率%</th>
+          <th>低価格</th>
+          <th>標準</th>
+          <th>上位</th>
+          <th>プレミアム</th>
+          <th>人件費</th>
+          <th>福利厚生</th>
+          <th>事務所</th>
+          <th>宣材費</th>
+          <th>郵送料</th>
+          <th>通信費</th>
+          <th>交通費</th>
+          <th>遠征費</th>
+          <th>設備費</th>
+          <th title="雑費消耗品費">雑費消耗</th>
+          <th>外注本数</th>
+          <th>外注金額</th>
+          <th class="ro-head">売上</th>
+          <th class="ro-head">販管費</th>
+          <th class="ro-head">単月収支</th>
+          <th class="ro-head">累計収支</th>
+        </tr>
+      </thead>
+      <tbody id="sheetBody"></tbody>
+    </table>
+  </div>
+
+  <div class="legend">
+    左端の色付き列＝シナリオ（<span class="sw" style="background:#1a5ca8;"></span>A
+    <span class="sw" style="background:#d9720e;"></span>B
+    <span class="sw" style="background:#0a7d32;"></span>C
+    <span class="sw" style="background:#7d3c98;"></span>D
+    <span class="sw" style="background:#c62828;"></span>E
+    <span class="sw" style="background:#555;"></span>F）<br>
+    薄い青背景＝自動計算（売上・販管費・単月収支・累計収支）。金額は「万円」、外注金額のみ「円」、成約率は「%」表記です。
+  </div>
+
+  <p class="footnote">
+    本シートは事業判断の参考となる概算です。税金・借入金返済・設備投資・消費税は含まれていません。<br>
+    セルを編集しただけではクラウドに反映されません。必ず上部の「💾 データ保存」を押して保存してください。
+  </p>
+
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <p id="confirmMessage"></p>
+      <div class="confirm-buttons">
+        <button class="confirm-yes" onclick="confirmYes()">はい</button>
+        <button class="confirm-no" onclick="confirmNo()">いいえ</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+<script>
+const NUM_MONTHS = 24;
+const ALL_SCENARIOS = ['A','B','C','D','E','F'];
+const SCN_COLOR = {A:'#1a5ca8',B:'#d9720e',C:'#0a7d32',D:'#7d3c98',E:'#c62828',F:'#555'};
+const PLAN_KEYS  = ['plan1','plan2','plan3','plan4'];
+const SGA_KEYS   = ['hr','welfare','office','promo','postage','comm','travel','exped','setup','misc'];
+const SGA_LABELS = {hr:'人件費',welfare:'福利厚生',office:'事務所',promo:'宣材費',postage:'郵送料',comm:'通信費',travel:'交通費',exped:'遠征費',setup:'設備費',misc:'雑費消耗'};
+
+// ▼ 他ページと完全に同じ設定値 ▼
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCmkQDBMU_GwhM7xhFfbOsNql65xDFmRJM",
+  authDomain: "memorialsong-cashflow.firebaseapp.com",
+  databaseURL: "https://memorialsong-cashflow-default-rtdb.firebaseio.com",
+  projectId: "memorialsong-cashflow"
+};
+const ROOM_ID = "memorialsong-cashflow-8f3k2x9q";
+// ▲ ここまで ▲
+
+let firebaseReady = false;
+let db = null;
+try{
+  if(FIREBASE_CONFIG.apiKey){
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    firebaseReady = true;
+  }
+}catch(e){ firebaseReady = false; }
+
+// dataStore[scn] = { monthsData:[...24], settings:{...}, scenarioLabel:'', savedAt:'' }
+let dataStore = {};
+
+function emptyMonth(){
+  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
+  PLAN_KEYS.forEach(k=> m[k]=0);
+  return m;
+}
+function emptyScenarioData(){
+  const monthsData = [];
+  for(let i=0;i<NUM_MONTHS;i++) monthsData.push(emptyMonth());
+  return {
+    monthsData,
+    settings: { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] },
+    scenarioLabel: '',
+    savedAt: null
+  };
+}
+// 既存データ互換：outAmount未設定の月は @3000円で自動補完
+function normalizeMonthsData(arr){
+  if(!Array.isArray(arr)) return arr;
+  arr.forEach(d=>{
+    if(d && (d.outAmount===undefined || d.outAmount===null)){
+      d.outAmount = (d.outCount||0) * 3000;
+    }
+  });
+  return arr;
+}
+
+function fmt(n, digits){
+  if(digits===undefined) digits=0;
+  if(!isFinite(n)) n=0;
+  return n.toLocaleString('ja-JP',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+}
+function setCloudStatus(text){ document.getElementById('cloudStatus').textContent = text; }
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+function toggleSection(id){ document.getElementById(id).classList.toggle('closed'); }
+
+// ── 確認ダイアログ ──
+let _confirmCallback = null;
+function showConfirm(message, onYes){
+  document.getElementById('confirmMessage').textContent = message;
+  document.getElementById('confirmOverlay').classList.add('show');
+  _confirmCallback = onYes;
+}
+function confirmYes(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  const cb = _confirmCallback; _confirmCallback = null;
+  if(cb) cb();
+}
+function confirmNo(){
+  document.getElementById('confirmOverlay').classList.remove('show');
+  _confirmCallback = null;
+}
+
+// ── クラウド読込（全シナリオ一括） ──
+function loadAll(silent){
+  if(!firebaseReady){
+    setCloudStatus('クラウド未接続のため、データを表示できません。');
+    return;
+  }
+  if(!silent) setCloudStatus('読み込み中…');
+  const promises = ALL_SCENARIOS.map(s=> db.ref('rooms/' + ROOM_ID + '/scenarios/' + s + '/data').get());
+  Promise.all(promises).then(snaps=>{
+    ALL_SCENARIOS.forEach((s,i)=>{
+      if(snaps[i].exists()){
+        const val = snaps[i].val();
+        val.monthsData = normalizeMonthsData(val.monthsData && val.monthsData.length===NUM_MONTHS ? val.monthsData : emptyScenarioData().monthsData);
+        val.settings = val.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+        val.scenarioLabel = val.scenarioLabel || '';
+        dataStore[s] = val;
+      } else {
+        dataStore[s] = emptyScenarioData();
+      }
+    });
+    setCloudStatus('全シナリオを読み込みました（' + new Date().toLocaleTimeString('ja-JP') + '）');
+    buildSettingsPanel();
+    buildTable();
+    if(!silent) showToast('最新データを読み込みました');
+  }).catch(err=>{
+    setCloudStatus('読み込みに失敗しました：' + err.message);
+  });
+}
+
+function confirmRefreshAll(){
+  showConfirm('クラウドの最新データに更新しますか？\n（現在の未保存の変更はすべて上書きされます）', ()=>loadAll(false));
+}
+
+// ── クラウド保存（全シナリオ一括） ──
+function confirmSaveAll(){
+  showConfirm('A〜F すべてのシナリオをクラウドに保存しますか？', saveAll);
+}
+function saveAll(){
+  if(!firebaseReady){
+    showToast('クラウド未設定のため保存できません');
+    return;
+  }
+  const updates = {};
+  ALL_SCENARIOS.forEach(s=>{
+    const payload = {
+      monthsData: dataStore[s].monthsData,
+      settings: dataStore[s].settings,
+      viewMode: dataStore[s].viewMode || 'accrual',
+      scenarioLabel: dataStore[s].scenarioLabel || '',
+      savedAt: new Date().toISOString()
+    };
+    updates['rooms/' + ROOM_ID + '/scenarios/' + s + '/data'] = payload;
+  });
+  db.ref().update(updates).then(()=>{
+    showToast('A〜F 全シナリオを保存しました');
+    setCloudStatus('保存完了（' + new Date().toLocaleTimeString('ja-JP') + '）');
+  }).catch(err=>{
+    showToast('保存に失敗しました：' + err.message);
+  });
+}
+
+// ── シナリオ別設定パネル ──
+function buildSettingsPanel(){
+  const body = document.getElementById('settingsBody');
+  let html = '';
+  ALL_SCENARIOS.forEach(s=>{
+    const d = dataStore[s];
+    const set = d.settings;
+    html += `<div class="settings-row" data-scn="${s}">
+      <div class="badge" style="background:${SCN_COLOR[s]};">${s}</div>
+      <div><input type="text" class="memo" data-field="scenarioLabel" value="${d.scenarioLabel||''}" placeholder="メモ"><span class="sf-label">メモ</span></div>
+      <div><input type="number" data-field="paymentLagDays" value="${set.paymentLagDays}"><span class="sf-label">入金日数</span></div>
+      <div><input type="number" data-field="outsourceUnitPrice" value="${set.outsourceUnitPrice}"><span class="sf-label">外注単価円</span></div>
+      <div><input type="number" data-field="price0" value="${set.prices[0]}"><span class="sf-label">低価格万</span></div>
+      <div><input type="number" data-field="price1" value="${set.prices[1]}"><span class="sf-label">標準万</span></div>
+      <div><input type="number" data-field="price2" value="${set.prices[2]}"><span class="sf-label">上位万</span></div>
+      <div><input type="number" data-field="price3" value="${set.prices[3]}"><span class="sf-label">プレミアム万</span></div>
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+// ── メインテーブル構築 ──
+function monthLabel(i){ return i===0 ? '1ヶ月目（準備月）' : (i+1)+'ヶ月目'; }
+
+const INPUT_FIELDS = [
+  {key:'rate', step:'0.01'},
+  {key:'plan1', step:'1'}, {key:'plan2', step:'1'}, {key:'plan3', step:'1'}, {key:'plan4', step:'1'},
+  {key:'hr', step:'0.1'}, {key:'welfare', step:'0.1'}, {key:'office', step:'0.1'}, {key:'promo', step:'0.1'},
+  {key:'postage', step:'0.1'}, {key:'comm', step:'0.1'}, {key:'travel', step:'0.1'}, {key:'exped', step:'0.1'},
+  {key:'setup', step:'0.1'}, {key:'misc', step:'0.1'},
+  {key:'outCount', step:'1'}, {key:'outAmount', step:'100'}
+];
+
+function buildTable(){
+  const tbody = document.getElementById('sheetBody');
+  let html = '';
+  ALL_SCENARIOS.forEach(s=>{
+    for(let i=0;i<NUM_MONTHS;i++){
+      const firstRow = i===0 ? ' scn-first-row' : '';
+      html += `<tr class="scn-${s}${firstRow}" data-scn="${s}" data-month="${i}">`;
+      html += `<td class="sticky-scn">${s}</td>`;
+      html += `<td class="sticky-month" title="${monthLabel(i)}">${i+1}</td>`;
+      INPUT_FIELDS.forEach(f=>{
+        html += `<td><input class="cell" type="text" inputmode="decimal" data-field="${f.key}" value="0"></td>`;
+      });
+      html += `<td class="ro" data-out="sales">-</td>`;
+      html += `<td class="ro" data-out="sga">-</td>`;
+      html += `<td class="ro" data-out="bal">-</td>`;
+      html += `<td class="ro" data-out="cum">-</td>`;
+      html += `</tr>`;
+    }
+  });
+  tbody.innerHTML = html;
+  // 実データを反映
+  ALL_SCENARIOS.forEach(s=> fillRowsForScenario(s));
+}
+
+function fillRowsForScenario(s){
+  const d = dataStore[s];
+  for(let i=0;i<NUM_MONTHS;i++){
+    const md = d.monthsData[i];
+    const row = document.querySelector(`tr[data-scn="${s}"][data-month="${i}"]`);
+    if(!row) continue;
+    INPUT_FIELDS.forEach(f=>{
+      const input = row.querySelector(`input[data-field="${f.key}"]`);
+      if(input) input.value = md[f.key] || 0;
+    });
+  }
+  recalcScenario(s);
+}
+
+// ── 計算（1シナリオ分） ──
+function recalcScenario(s){
+  const d = dataStore[s];
+  const prices = d.settings.prices;
+  let cum = 0;
+  for(let i=0;i<NUM_MONTHS;i++){
+    const md = d.monthsData[i];
+    let sales = 0;
+    PLAN_KEYS.forEach((k,pi)=> sales += (md[k]||0) * (prices[pi]||0));
+    let sga = 0;
+    SGA_KEYS.forEach(k=> sga += md[k]||0);
+    sga += (md.outAmount||0) / 10000;
+    const bal = sales - sga;
+    cum += bal;
+
+    const row = document.querySelector(`tr[data-scn="${s}"][data-month="${i}"]`);
+    if(!row) continue;
+    row.querySelector('[data-out="sales"]').textContent = fmt(sales,1);
+    row.querySelector('[data-out="sga"]').textContent = fmt(sga,1);
+    const balCell = row.querySelector('[data-out="bal"]');
+    balCell.textContent = fmt(bal,1);
+    balCell.className = 'ro ' + (bal>=0?'pos':'neg');
+    const cumCell = row.querySelector('[data-out="cum"]');
+    cumCell.textContent = fmt(cum,1);
+    cumCell.className = 'ro ' + (cum>=0?'pos':'neg');
+  }
+}
+
+// ── イベント：セル編集 ──
+document.getElementById('sheetBody').addEventListener('input', function(e){
+  const el = e.target;
+  if(!el.classList.contains('cell')) return;
+  const row = el.closest('tr');
+  const s = row.dataset.scn;
+  const i = parseInt(row.dataset.month, 10);
+  const field = el.dataset.field;
+
+  let raw = el.value.replace(/[^0-9.]/g,'');
+  const firstDot = raw.indexOf('.');
+  if(firstDot!==-1){ raw = raw.slice(0,firstDot+1)+raw.slice(firstDot+1).replace(/\./g,''); }
+  if(raw !== el.value) el.value = raw;
+
+  dataStore[s].monthsData[i][field] = parseFloat(raw) || 0;
+  recalcScenario(s);
+});
+
+// ── イベント：設定パネル編集 ──
+document.getElementById('settingsBody').addEventListener('input', function(e){
+  const el = e.target;
+  const row = el.closest('.settings-row');
+  if(!row) return;
+  const s = row.dataset.scn;
+  const field = el.dataset.field;
+  const d = dataStore[s];
+
+  if(field === 'scenarioLabel'){
+    d.scenarioLabel = el.value;
+  } else if(field.startsWith('price')){
+    const idx = parseInt(field.replace('price',''),10);
+    let v = parseFloat(el.value); if(isNaN(v)||v<0) v=0;
+    d.settings.prices[idx] = v;
+    recalcScenario(s);
+  } else {
+    let v = parseFloat(el.value); if(isNaN(v)||v<0) v=0;
+    d.settings[field] = v;
+  }
+});
+
+// ── シナリオ表示切替（フィルター） ──
+const SHEET_FILTER_KEY = 'pv_cashflow_sheet_filter';
+function setScenarioFilter(filter){
+  const scroll = document.getElementById('tableScroll');
+  scroll.className = 'table-scroll' + (filter==='all' ? '' : ' filter-' + filter);
+  document.querySelectorAll('#scnFilter button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  try{ localStorage.setItem(SHEET_FILTER_KEY, filter); }catch(e){}
+}
+
+// ── 起動 ──
+ALL_SCENARIOS.forEach(s=> dataStore[s] = emptyScenarioData());
+loadAll(true);
+try{
+  const savedFilter = localStorage.getItem(SHEET_FILTER_KEY);
+  if(savedFilter) setScenarioFilter(savedFilter);
+}catch(e){}
+</script>
+</body>
+</html>

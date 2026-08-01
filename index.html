@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>収支推移トラッカー v2.1</title>
+<title>収支推移トラッカー v2.2</title>
 <style>
   :root{
     --profit-green:#0a7d32;
@@ -249,7 +249,7 @@
   <!-- 統一ページヘッダー：データ保存（左）／タイトル／更新（右） -->
   <div class="page-header">
     <button class="hdr-btn hdr-btn-left" onclick="confirmSave()">💾 データ保存</button>
-    <h1 class="hdr-title">収支推移トラッカー v2.1</h1>
+    <h1 class="hdr-title">収支推移トラッカー v2.2</h1>
     <button class="hdr-btn hdr-btn-right" onclick="confirmLoad()">🔄 更新</button>
   </div>
 
@@ -259,6 +259,7 @@
     <a href="./compare1.html">🆚 比較①</a>
     <a href="./compare2.html">🆚 比較②</a>
     <a href="./compare3.html">🆚 比較③</a>
+      <a href="./sheet.html">📋 表計算シート</a>
   </div>
 
   <div class="cloud-status" id="cloudStatus">起動中…</div>
@@ -420,7 +421,7 @@ const SGA_FIELD_DEFS = [
   {key:'travel',  label:'交通費'},
   {key:'exped',   label:'遠征費'},
   {key:'setup',   label:'初期設備費・その他（IT機器等）'},
-  {key:'misc',    label:'雑費予備費'},
+  {key:'misc',    label:'雑費消耗品費'},
 ];
 
 // ── 初期データ（1〜7ヶ月目は指定実績値、以降は0） ──
