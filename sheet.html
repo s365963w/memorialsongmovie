@@ -250,6 +250,7 @@
           <th>標準</th>
           <th>上位</th>
           <th>プレミアム</th>
+          <th class="ro-head">受注数計</th>
           <th>人件費</th>
           <th>福利厚生</th>
           <th>事務所</th>
@@ -261,7 +262,7 @@
           <th>設備費</th>
           <th title="雑費消耗品費">雑費消耗</th>
           <th>外注本数</th>
-          <th>外注金額</th>
+          <th>外注金額<br><span style="font-size:8px;font-weight:400;">(万円)</span></th>
           <th class="ro-head">売上</th>
           <th class="ro-head">販管費</th>
           <th class="ro-head">単月収支</th>
@@ -279,7 +280,7 @@
     <span class="sw" style="background:#7d3c98;"></span>D
     <span class="sw" style="background:#c62828;"></span>E
     <span class="sw" style="background:#555;"></span>F）<br>
-    薄い青背景＝自動計算（売上・販管費・単月収支・累計収支）。金額は「万円」、外注金額のみ「円」、成約率は「%」表記です。
+    薄い青背景＝自動計算（売上・販管費・単月収支・累計収支）。金額・外注金額は「万円」（外注金額は0.1万円未満切り捨て）、成約率は「%」表記です。
   </div>
 
   <p class="footnote">
@@ -495,6 +496,9 @@ function buildTable(){
       html += `<td class="sticky-month" title="${monthLabel(i)}">${i+1}</td>`;
       INPUT_FIELDS.forEach(f=>{
         html += `<td><input class="cell" type="text" inputmode="decimal" data-field="${f.key}" value="0"></td>`;
+        if(f.key === 'plan4'){
+          html += `<td class="ro" data-out="ordercount">0</td>`;
+        }
       });
       html += `<td class="ro" data-out="sales">-</td>`;
       html += `<td class="ro" data-out="sga">-</td>`;
@@ -516,10 +520,21 @@ function fillRowsForScenario(s){
     if(!row) continue;
     INPUT_FIELDS.forEach(f=>{
       const input = row.querySelector(`input[data-field="${f.key}"]`);
-      if(input) input.value = md[f.key] || 0;
+      if(!input) return;
+      if(f.key === 'outAmount'){
+        // 円 → 万円（0.1万円単位・切り捨て）で表示
+        input.value = yenToManTruncated(md.outAmount||0);
+      } else {
+        input.value = md[f.key] || 0;
+      }
     });
   }
   recalcScenario(s);
+}
+
+// 円 → 万円（小数第1位＝0.1万円単位）へ切り捨て変換
+function yenToManTruncated(yen){
+  return (Math.floor((yen||0) / 1000) / 10).toFixed(1);
 }
 
 // ── 計算（1シナリオ分） ──
@@ -531,6 +546,8 @@ function recalcScenario(s){
     const md = d.monthsData[i];
     let sales = 0;
     PLAN_KEYS.forEach((k,pi)=> sales += (md[k]||0) * (prices[pi]||0));
+    let orderCount = 0;
+    PLAN_KEYS.forEach(k=> orderCount += (md[k]||0));
     let sga = 0;
     SGA_KEYS.forEach(k=> sga += md[k]||0);
     sga += (md.outAmount||0) / 10000;
@@ -539,6 +556,7 @@ function recalcScenario(s){
 
     const row = document.querySelector(`tr[data-scn="${s}"][data-month="${i}"]`);
     if(!row) continue;
+    row.querySelector('[data-out="ordercount"]').textContent = fmt(orderCount,0);
     row.querySelector('[data-out="sales"]').textContent = fmt(sales,1);
     row.querySelector('[data-out="sga"]').textContent = fmt(sga,1);
     const balCell = row.querySelector('[data-out="bal"]');
@@ -564,7 +582,13 @@ document.getElementById('sheetBody').addEventListener('input', function(e){
   if(firstDot!==-1){ raw = raw.slice(0,firstDot+1)+raw.slice(firstDot+1).replace(/\./g,''); }
   if(raw !== el.value) el.value = raw;
 
-  dataStore[s].monthsData[i][field] = parseFloat(raw) || 0;
+  if(field === 'outAmount'){
+    // 入力値は万円（0.1万円単位）。円に変換して保存し、0.1万円未満は切り捨て
+    const man = parseFloat(raw) || 0;
+    dataStore[s].monthsData[i][field] = Math.floor(man * 10) * 1000;
+  } else {
+    dataStore[s].monthsData[i][field] = parseFloat(raw) || 0;
+  }
   recalcScenario(s);
 });
 
