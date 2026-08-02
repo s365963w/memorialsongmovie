@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>収支推移トラッカー v2.2</title>
+<title>収支推移トラッカー v2.1</title>
 <style>
   :root{
     --profit-green:#0a7d32;
@@ -174,8 +174,8 @@
     background:transparent;color:#fff;font-weight:700;font-size:13.5px;
   }
   .btn-load-cloud:active{background:rgba(255,255,255,.15);}
-  .cloud-status{font-size:11.5px;color:#dceaff;text-align:center;line-height:1.5;min-height:16px;}
-  .cloud-status.warn{color:#ffe08a;}
+  .cloud-status{font-size:11.5px;color:#777;text-align:center;line-height:1.5;min-height:16px;margin-bottom:14px;}
+  .cloud-status.warn{color:#b26a00;}
 
   .chart-box{
     background:#fff;border:1px solid var(--border);border-radius:10px;
@@ -249,7 +249,7 @@
   <!-- 統一ページヘッダー：データ保存（左）／タイトル／更新（右） -->
   <div class="page-header">
     <button class="hdr-btn hdr-btn-left" onclick="confirmSave()">💾 データ保存</button>
-    <h1 class="hdr-title">収支推移トラッカー v2.2</h1>
+    <h1 class="hdr-title">収支推移トラッカー v2.1</h1>
     <button class="hdr-btn hdr-btn-right" onclick="confirmLoad()">🔄 更新</button>
   </div>
 
@@ -258,7 +258,6 @@
     <a href="./report.html">📊 レポート</a>
     <a href="./compare1.html">🆚 比較①</a>
     <a href="./compare2.html">🆚 比較②</a>
-    <a href="./compare3.html">🆚 比較③</a>
       <a href="./sheet.html">📋 表計算シート</a>
   </div>
 

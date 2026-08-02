@@ -102,6 +102,14 @@
   .scn-filter button.scn-color-E.active{background:#c62828;border-color:#c62828;}
   .scn-filter button.scn-color-F.active{background:#555;border-color:#555;}
 
+  /* 集計ベース切替（発生／資金繰り） */
+  .basis-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .basis-toggle button{
+    flex:1;height:40px;border-radius:8px;border:2px solid #ccc;
+    background:#fff;color:#555;font-weight:800;font-size:13px;
+  }
+  .basis-toggle button.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+
   /* シナリオ絞り込み：非選択シナリオの行を非表示 */
   .table-scroll.filter-A tr[data-scn]:not([data-scn="A"]){display:none;}
   .table-scroll.filter-B tr[data-scn]:not([data-scn="B"]){display:none;}
@@ -213,7 +221,6 @@
     <a href="./report.html">📊 レポート</a>
     <a href="./compare1.html">🆚 比較①</a>
     <a href="./compare2.html">🆚 比較②</a>
-    <a href="./compare3.html">🆚 比較③</a>
     <a href="./sheet.html" class="current">📋 表計算シート</a>
   </div>
 
@@ -230,6 +237,13 @@
     <button class="scn-color-E" data-filter="E" onclick="setScenarioFilter('E')">E</button>
     <button class="scn-color-F" data-filter="F" onclick="setScenarioFilter('F')">F</button>
   </div>
+
+  <!-- 集計ベース切替（発生ベース／資金繰りベース） -->
+  <div class="basis-toggle" id="basisToggle">
+    <button class="active" data-basis="accrual" onclick="setBasis('accrual')">発生ベース（計上）</button>
+    <button data-basis="cash" onclick="setBasis('cash')">資金繰りベース（現金）</button>
+  </div>
+  <p id="basisNote" style="font-size:11px;color:#777;text-align:center;margin:-4px 0 12px;line-height:1.6;">発生ベース：売上をその月に計上</p>
 
   <!-- シナリオ別設定 -->
   <div class="section closed" id="sec-settings">
@@ -263,7 +277,7 @@
           <th title="雑費消耗品費">雑費消耗</th>
           <th>外注本数</th>
           <th>外注金額<br><span style="font-size:8px;font-weight:400;">(万円)</span></th>
-          <th class="ro-head">売上</th>
+          <th class="ro-head" id="salesHead">売上</th>
           <th class="ro-head">販管費</th>
           <th class="ro-head">単月収支</th>
           <th class="ro-head">累計収支</th>
@@ -538,27 +552,50 @@ function yenToManTruncated(yen){
 }
 
 // ── 計算（1シナリオ分） ──
+// currentBasis が 'accrual' なら発生ベース、'cash' なら資金繰りベース（入金サイト分だけ売上入金を後ろ倒し）
 function recalcScenario(s){
   const d = dataStore[s];
   const prices = d.settings.prices;
-  let cum = 0;
+  const lagMonths = Math.max(0, Math.ceil((d.settings.paymentLagDays||0)/30));
+
+  // まず全月の「発生ベース売上」と「販管費」を先に算出
+  const salesArr = [], sgaArr = [], countArr = [];
   for(let i=0;i<NUM_MONTHS;i++){
     const md = d.monthsData[i];
-    let sales = 0;
-    PLAN_KEYS.forEach((k,pi)=> sales += (md[k]||0) * (prices[pi]||0));
-    let orderCount = 0;
-    PLAN_KEYS.forEach(k=> orderCount += (md[k]||0));
+    let sales = 0, orderCount = 0;
+    PLAN_KEYS.forEach((k,pi)=>{
+      sales += (md[k]||0) * (prices[pi]||0);
+      orderCount += (md[k]||0);
+    });
     let sga = 0;
     SGA_KEYS.forEach(k=> sga += md[k]||0);
     sga += (md.outAmount||0) / 10000;
-    const bal = sales - sga;
+    salesArr.push(sales);
+    sgaArr.push(sga);
+    countArr.push(orderCount);
+  }
+
+  // 表示用の売上（資金繰りベースでは lagMonths ヶ月前の売上が当月入金）
+  const dispSales = [];
+  for(let i=0;i<NUM_MONTHS;i++){
+    if(currentBasis === 'cash'){
+      const src = i - lagMonths;
+      dispSales.push(src >= 0 ? salesArr[src] : 0);
+    } else {
+      dispSales.push(salesArr[i]);
+    }
+  }
+
+  let cum = 0;
+  for(let i=0;i<NUM_MONTHS;i++){
+    const bal = dispSales[i] - sgaArr[i];
     cum += bal;
 
     const row = document.querySelector(`tr[data-scn="${s}"][data-month="${i}"]`);
     if(!row) continue;
-    row.querySelector('[data-out="ordercount"]').textContent = fmt(orderCount,0);
-    row.querySelector('[data-out="sales"]').textContent = fmt(sales,1);
-    row.querySelector('[data-out="sga"]').textContent = fmt(sga,1);
+    row.querySelector('[data-out="ordercount"]').textContent = fmt(countArr[i],0);
+    row.querySelector('[data-out="sales"]').textContent = fmt(dispSales[i],1);
+    row.querySelector('[data-out="sga"]').textContent = fmt(sgaArr[i],1);
     const balCell = row.querySelector('[data-out="bal"]');
     balCell.textContent = fmt(bal,1);
     balCell.className = 'ro ' + (bal>=0?'pos':'neg');
@@ -566,6 +603,27 @@ function recalcScenario(s){
     cumCell.textContent = fmt(cum,1);
     cumCell.className = 'ro ' + (cum>=0?'pos':'neg');
   }
+}
+
+// ── 集計ベース切替 ──
+const BASIS_KEY = 'pv_cashflow_sheet_basis';
+let currentBasis = 'accrual';
+function setBasis(basis){
+  currentBasis = basis;
+  document.querySelectorAll('#basisToggle button').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.basis === basis);
+  });
+  // 売上列の見出しを切り替え（資金繰り時は「入金」と明示）
+  const salesHead = document.getElementById('salesHead');
+  if(salesHead) salesHead.textContent = (basis==='cash') ? '入金' : '売上';
+  const noteEl = document.getElementById('basisNote');
+  if(noteEl){
+    noteEl.textContent = (basis==='cash')
+      ? '資金繰りベース：入金サイト日数の分だけ売上入金を後ろ倒し（販管費は同月）'
+      : '発生ベース：売上をその月に計上';
+  }
+  try{ localStorage.setItem(BASIS_KEY, basis); }catch(e){}
+  ALL_SCENARIOS.forEach(s=> recalcScenario(s));
 }
 
 // ── イベント：セル編集 ──
@@ -611,6 +669,8 @@ document.getElementById('settingsBody').addEventListener('input', function(e){
   } else {
     let v = parseFloat(el.value); if(isNaN(v)||v<0) v=0;
     d.settings[field] = v;
+    // 入金サイト日数は資金繰りベースの計算に影響するため再計算
+    if(field === 'paymentLagDays') recalcScenario(s);
   }
 });
 
@@ -631,6 +691,10 @@ loadAll(true);
 try{
   const savedFilter = localStorage.getItem(SHEET_FILTER_KEY);
   if(savedFilter) setScenarioFilter(savedFilter);
+}catch(e){}
+try{
+  const savedBasis = localStorage.getItem(BASIS_KEY);
+  if(savedBasis === 'cash' || savedBasis === 'accrual') setBasis(savedBasis);
 }catch(e){}
 </script>
 </body>
