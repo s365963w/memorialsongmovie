@@ -422,19 +422,33 @@ function setViewMode(mode){
   render();
 }
 
+// 低価格帯（廉価版）売上・件数：free/paid/urgentの内訳がある新マスター(A/B/C)はそれを用い、
+// 内訳が無い旧データ（D/E/F等、plan1のみ）は全件「通常（有料）」として扱う＝旧ロジックと同じ計算結果になる。
+function lowTierSalesAndCount(d, prices, urgentSurcharge){
+  if(d.paidLow===undefined && d.freeLow===undefined && d.urgentLow===undefined){
+    const c = d.plan1||0;
+    return { sales: c*(prices[0]||0), count: c };
+  }
+  const free=d.freeLow||0, paid=d.paidLow||0, urgent=d.urgentLow||0;
+  return { sales: paid*(prices[0]||0) + urgent*(urgentSurcharge!==undefined?urgentSurcharge:1), count: free+paid };
+}
+
 // ── 1シナリオ分の計算 ──
 function computeScenario(data){
   if(!data || !data.monthsData){ return null; }
   const monthsData = data.monthsData;
-  const settings = data.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+  const settings = data.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3.2,5.2,10], urgentSurchargeLow:1 };
   const lagMonths = Math.max(0, Math.ceil((settings.paymentLagDays||0)/30));
-  const prices = settings.prices || [1,3,5,10];
+  const prices = settings.prices || [1,3.2,5.2,10];
+  const urgentSurcharge = settings.urgentSurchargeLow!==undefined ? settings.urgentSurchargeLow : 1;
   const sgaArr=[], salesArr=[], countArr=[];
 
   for(let i=0;i<NUM_MONTHS;i++){
     const d = monthsData[i] || {};
-    let salesTotal=0, countTotal=0;
+    const low = lowTierSalesAndCount(d, prices, urgentSurcharge);
+    let salesTotal=low.sales, countTotal=low.count;
     PLAN_KEYS.forEach((k,pi)=>{
+      if(k==='plan1') return;
       const c = d[k]||0;
       salesTotal += c*(prices[pi]||0);
       countTotal += c;

@@ -260,7 +260,9 @@
           <th class="sticky-scn">S</th>
           <th class="sticky-month">月</th>
           <th>成約率%</th>
-          <th>低価格</th>
+          <th title="初回3件のみ無料（毎月復活なし）">廉価無料</th>
+          <th title="廉価版・通常課金">廉価通常</th>
+          <th title="特急（無料枠でも課金）">廉価特急</th>
           <th>標準</th>
           <th>上位</th>
           <th>プレミアム</th>
@@ -350,7 +352,7 @@ try{
 let dataStore = {};
 
 function emptyMonth(){
-  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
+  const m = {rate:0, freeLow:0,paidLow:0,urgentLow:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
   PLAN_KEYS.forEach(k=> m[k]=0);
   return m;
 }
@@ -359,18 +361,30 @@ function emptyScenarioData(){
   for(let i=0;i<NUM_MONTHS;i++) monthsData.push(emptyMonth());
   return {
     monthsData,
-    settings: { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] },
+    settings: { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3.2,5.2,10], urgentSurchargeLow:1 },
     scenarioLabel: '',
     savedAt: null
   };
 }
-// 既存データ互換：outAmount未設定の月は @3000円で自動補完
+// 既存データ互換：outAmount未設定の月は @3000円で自動補完。
+// free/paid/urgentの内訳が無い旧データ（plan1のみ）は全件「通常（有料）」として扱う。
 function normalizeMonthsData(arr){
   if(!Array.isArray(arr)) return arr;
   arr.forEach(d=>{
-    if(d && (d.outAmount===undefined || d.outAmount===null)){
+    if(!d) return;
+    if(d.outAmount===undefined || d.outAmount===null){
       d.outAmount = (d.outCount||0) * 3000;
     }
+    if(d.paidLow===undefined && d.freeLow===undefined && d.urgentLow===undefined){
+      d.paidLow = d.plan1 || 0;
+      d.freeLow = 0;
+      d.urgentLow = 0;
+    } else {
+      d.paidLow = d.paidLow||0;
+      d.freeLow = d.freeLow||0;
+      d.urgentLow = d.urgentLow||0;
+    }
+    d.plan1 = d.freeLow + d.paidLow;
   });
   return arr;
 }
@@ -418,7 +432,8 @@ function loadAll(silent){
       if(snaps[i].exists()){
         const val = snaps[i].val();
         val.monthsData = normalizeMonthsData(val.monthsData && val.monthsData.length===NUM_MONTHS ? val.monthsData : emptyScenarioData().monthsData);
-        val.settings = val.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+        val.settings = val.settings || { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3.2,5.2,10], urgentSurchargeLow:1 };
+        if(val.settings.urgentSurchargeLow===undefined || val.settings.urgentSurchargeLow===null) val.settings.urgentSurchargeLow = 1;
         val.scenarioLabel = val.scenarioLabel || '';
         dataStore[s] = val;
       } else {
@@ -478,7 +493,8 @@ function buildSettingsPanel(){
       <div><input type="text" class="memo" data-field="scenarioLabel" value="${d.scenarioLabel||''}" placeholder="メモ"><span class="sf-label">メモ</span></div>
       <div><input type="number" data-field="paymentLagDays" value="${set.paymentLagDays}"><span class="sf-label">入金日数</span></div>
       <div><input type="number" data-field="outsourceUnitPrice" value="${set.outsourceUnitPrice}"><span class="sf-label">外注単価円</span></div>
-      <div><input type="number" data-field="price0" value="${set.prices[0]}"><span class="sf-label">低価格万</span></div>
+      <div><input type="number" data-field="price0" value="${set.prices[0]}"><span class="sf-label">廉価通常万</span></div>
+      <div><input type="number" data-field="urgentSurchargeLow" value="${set.urgentSurchargeLow!==undefined?set.urgentSurchargeLow:1}"><span class="sf-label">廉価特急加算万</span></div>
       <div><input type="number" data-field="price1" value="${set.prices[1]}"><span class="sf-label">標準万</span></div>
       <div><input type="number" data-field="price2" value="${set.prices[2]}"><span class="sf-label">上位万</span></div>
       <div><input type="number" data-field="price3" value="${set.prices[3]}"><span class="sf-label">プレミアム万</span></div>
@@ -492,7 +508,8 @@ function monthLabel(i){ return i===0 ? '1ヶ月目（準備月）' : (i+1)+'ヶ�
 
 const INPUT_FIELDS = [
   {key:'rate', step:'0.01'},
-  {key:'plan1', step:'1'}, {key:'plan2', step:'1'}, {key:'plan3', step:'1'}, {key:'plan4', step:'1'},
+  {key:'freeLow', step:'1'}, {key:'paidLow', step:'1'}, {key:'urgentLow', step:'1'},
+  {key:'plan2', step:'1'}, {key:'plan3', step:'1'}, {key:'plan4', step:'1'},
   {key:'hr', step:'0.1'}, {key:'welfare', step:'0.1'}, {key:'office', step:'0.1'}, {key:'promo', step:'0.1'},
   {key:'postage', step:'0.1'}, {key:'comm', step:'0.1'}, {key:'travel', step:'0.1'}, {key:'exped', step:'0.1'},
   {key:'setup', step:'0.1'}, {key:'misc', step:'0.1'},
@@ -560,10 +577,14 @@ function recalcScenario(s){
 
   // まず全月の「発生ベース売上」と「販管費」を先に算出
   const salesArr = [], sgaArr = [], countArr = [];
+  const urgentSurcharge = d.settings.urgentSurchargeLow!==undefined ? d.settings.urgentSurchargeLow : 1;
   for(let i=0;i<NUM_MONTHS;i++){
     const md = d.monthsData[i];
-    let sales = 0, orderCount = 0;
+    const freeLow=md.freeLow||0, paidLow=md.paidLow||0, urgentLow=md.urgentLow||0;
+    let sales = paidLow*(prices[0]||0) + urgentLow*urgentSurcharge;
+    let orderCount = freeLow + paidLow;
     PLAN_KEYS.forEach((k,pi)=>{
+      if(k==='plan1') return;
       sales += (md[k]||0) * (prices[pi]||0);
       orderCount += (md[k]||0);
     });
@@ -669,8 +690,8 @@ document.getElementById('settingsBody').addEventListener('input', function(e){
   } else {
     let v = parseFloat(el.value); if(isNaN(v)||v<0) v=0;
     d.settings[field] = v;
-    // 入金サイト日数は資金繰りベースの計算に影響するため再計算
-    if(field === 'paymentLagDays') recalcScenario(s);
+    // 入金サイト日数・廉価版特急加算額は計算に影響するため再計算
+    if(field === 'paymentLagDays' || field === 'urgentSurchargeLow') recalcScenario(s);
   }
 });
 

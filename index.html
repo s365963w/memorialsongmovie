@@ -141,12 +141,14 @@
     background:#fff3d6;border:1px solid #f0c96a;border-radius:10px;
     padding:10px 12px;margin-bottom:12px;
   }
-  .scenario-tabs{display:flex;gap:4px;margin-bottom:8px;}
+  .scenario-tabs{display:flex;gap:4px;margin-bottom:6px;}
   .scenario-tab{
-    flex:1;height:38px;min-width:0;border-radius:7px;border:2px solid #d99a00;
-    background:#fff;color:#8a6300;font-weight:800;font-size:14px;padding:0;
+    flex:1;height:44px;min-width:0;border-radius:7px;border:2px solid #d99a00;
+    background:#fff;color:#8a6300;font-weight:800;font-size:14px;padding:2px 0;line-height:1.3;
   }
+  .scenario-tab small{font-size:9.5px;font-weight:700;}
   .scenario-tab.active{background:#d99a00;color:#fff;}
+  .scenario-comment{font-size:11px;color:#8a6300;line-height:1.5;margin-bottom:8px;min-height:1em;}
   .scenario-label-row{display:flex;align-items:center;gap:6px;}
   .scenario-label-prefix{font-size:12px;color:#8a6300;white-space:nowrap;}
   .scenario-label-row input[type=text]{
@@ -268,13 +270,14 @@
   <!-- シナリオ切替（6軸運用） -->
   <div class="scenario-bar">
     <div class="scenario-tabs">
-      <button class="scenario-tab active" id="tabA" onclick="switchScenario('A')">A</button>
-      <button class="scenario-tab" id="tabB" onclick="switchScenario('B')">B</button>
-      <button class="scenario-tab" id="tabC" onclick="switchScenario('C')">C</button>
-      <button class="scenario-tab" id="tabD" onclick="switchScenario('D')">D</button>
-      <button class="scenario-tab" id="tabE" onclick="switchScenario('E')">E</button>
-      <button class="scenario-tab" id="tabF" onclick="switchScenario('F')">F</button>
+      <button class="scenario-tab active" id="tabA" onclick="switchScenario('A')">A<br><small>成長</small></button>
+      <button class="scenario-tab" id="tabB" onclick="switchScenario('B')">B<br><small>堅実</small></button>
+      <button class="scenario-tab" id="tabC" onclick="switchScenario('C')">C<br><small>標準</small></button>
+      <button class="scenario-tab" id="tabD" onclick="switchScenario('D')">D<br><small>&nbsp;</small></button>
+      <button class="scenario-tab" id="tabE" onclick="switchScenario('E')">E<br><small>旧A</small></button>
+      <button class="scenario-tab" id="tabF" onclick="switchScenario('F')">F<br><small>旧B</small></button>
     </div>
+    <div class="scenario-comment" id="scenarioComment"></div>
     <div class="scenario-label-row">
       <span class="scenario-label-prefix">メモ</span>
       <input type="text" id="scenarioLabel" placeholder="例：現実的ケース" maxlength="20">
@@ -289,16 +292,20 @@
     <div class="section-body">
       <div class="cat-label">プラン別単価（万円）</div>
       <div class="field">
-        <label>低価格PV 単価</label>
+        <label>廉価版 通常価格<br><small style="color:#888;font-size:11px;">代理店契約後、初回3件のみ無料（毎月無料枠は復活しない）</small></label>
         <div class="input-group"><input type="text" inputmode="decimal" id="price1" value="1"><span class="unit">万円</span></div>
       </div>
       <div class="field">
+        <label>廉価版 特急追加料金<br><small style="color:#888;font-size:11px;">無料枠の案件でも特急のみ有料</small></label>
+        <div class="input-group"><input type="text" inputmode="decimal" id="urgentSurchargeLow" value="1"><span class="unit">万円</span></div>
+      </div>
+      <div class="field">
         <label>標準PV 単価</label>
-        <div class="input-group"><input type="text" inputmode="decimal" id="price2" value="3"><span class="unit">万円</span></div>
+        <div class="input-group"><input type="text" inputmode="decimal" id="price2" value="3.2"><span class="unit">万円</span></div>
       </div>
       <div class="field">
         <label>上位PV 単価</label>
-        <div class="input-group"><input type="text" inputmode="decimal" id="price3" value="5"><span class="unit">万円</span></div>
+        <div class="input-group"><input type="text" inputmode="decimal" id="price3" value="5.2"><span class="unit">万円</span></div>
       </div>
       <div class="field">
         <label>プレミアムPV 単価</label>
@@ -335,12 +342,23 @@
   </div>
 
   <div class="result-card">
-    <h3>24ヶ月 総括</h3>
-    <div class="result-row"><span>累計売上</span><span class="val" id="sum_sales">-</span></div>
-    <div class="result-row"><span>累計販管費</span><span class="val" id="sum_sga">-</span></div>
-    <div class="result-row"><span id="sum_balance_label">累計収支（発生ベース）</span><span class="val" id="sum_balance">-</span></div>
-    <div class="result-row"><span>黒字転換した月</span><span class="val" id="breakevenMonth">-</span></div>
-    <div class="result-row"><span>累計収支のボトム（最大赤字）</span><span class="val" id="worstPoint">-</span></div>
+    <h3>24ヶ月 総括（発生ベース・資金繰りベース 併記）</h3>
+    <div class="result-row"><span>24ヶ月累計売上</span><span class="val" id="kpi_sales">-</span></div>
+    <div class="result-row"><span>24ヶ月累計販管費</span><span class="val" id="kpi_sga">-</span></div>
+    <div class="result-row"><span>24ヶ月累計P/L（発生ベース）</span><span class="val" id="kpi_plCum">-</span></div>
+    <div class="result-row"><span>P/L累積黒字化月</span><span class="val" id="kpi_plBreakeven">-</span></div>
+    <div class="result-row"><span>最大資金不足額</span><span class="val" id="kpi_worstCash">-</span></div>
+    <div class="result-row"><span>最大資金不足発生月</span><span class="val" id="kpi_worstCashMonth">-</span></div>
+    <div class="result-row"><span>Cash累積黒字化月</span><span class="val" id="kpi_cashBreakeven">-</span></div>
+    <div class="result-row"><span>24ヶ月累計Cash（資金繰りベース）</span><span class="val" id="kpi_cashCum">-</span></div>
+    <div class="result-row"><span>24ヶ月目 月商</span><span class="val" id="kpi_m24Sales">-</span></div>
+    <div class="result-row"><span>24ヶ月目 受注件数</span><span class="val" id="kpi_m24Orders">-</span></div>
+  </div>
+  <div class="result-card" id="sec-toggle-summary">
+    <h3 id="sum_balance_label">下表・グラフの基準（切替中）：発生ベース</h3>
+    <div class="result-row"><span>表示中の累計収支（24ヶ月後）</span><span class="val" id="sum_balance">-</span></div>
+    <div class="result-row"><span>表示中の黒字転換した月</span><span class="val" id="breakevenMonth">-</span></div>
+    <div class="result-row"><span>表示中の累計収支のボトム（最大赤字）</span><span class="val" id="worstPoint">-</span></div>
   </div>
 
   <div class="chart-box">
@@ -405,9 +423,19 @@ const NUM_MONTHS = 24;
 let suppressSave = false;
 let viewMode = 'accrual';
 
-const PLAN_NAMES = ['低価格PV','標準PV','上位PV','プレミアムPV'];
-const PLAN_KEYS  = ['plan1','plan2','plan3','plan4'];
+const PLAN_NAMES = ['標準PV','上位PV','プレミアムPV'];
+const PLAN_KEYS  = ['plan2','plan3','plan4'];
 const PRICE_IDS  = ['price1','price2','price3','price4'];
+
+// シナリオ運用ルール（6軸：A/B/C=新マスター、D=現状維持、E/F=旧A/B保存用）
+const SCENARIO_META = {
+  A:{ label:'成長ケース', comment:'成長ケース。大森氏原案の上振れ想定。' },
+  B:{ label:'堅実ケース', comment:'堅実ケース。大森氏原案の下振れ想定。' },
+  C:{ label:'標準ケース', comment:'標準ケース。A/Bの中間需要を採用。24ヶ月目に約978件/月、スタッフ7名程度を想定し、投資家向けの基準ケース候補として位置付ける。' },
+  D:{ label:'', comment:'' },
+  E:{ label:'旧Aパターン（成長）', comment:'旧Aパターン（成長）※保存用。新ロジックでは上書きしません。' },
+  F:{ label:'旧Bパターン（堅実）', comment:'旧Bパターン（堅実）※保存用。新ロジックでは上書きしません。' },
+};
 
 // 固定費フィールド定義
 const SGA_FIELD_DEFS = [
@@ -423,38 +451,56 @@ const SGA_FIELD_DEFS = [
   {key:'misc',    label:'雑費消耗品費'},
 ];
 
-// ── 初期データ（1〜7ヶ月目は指定実績値、以降は0） ──
+// ── 初期データ ──
 function emptyMonth(){
-  const m = {rate:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
+  const m = {rate:0, freeLow:0,paidLow:0,urgentLow:0, hr:0,welfare:0,office:0,promo:0,postage:0,comm:0,travel:0,exped:0,setup:0,misc:0,outCount:0,outAmount:0};
   PLAN_KEYS.forEach(k=> m[k]=0);
   return m;
 }
-function buildDefaultMonths(){
+// legacy（旧D/E/F用）：1〜7ヶ月目は旧実績値、以降は0。低価格件数は全て「通常（有料）」扱いとし、
+// 旧ロジック（廉価版=単価1.0万のみ）と同じ計算結果になるようにする。
+function buildLegacyDefaultMonths(){
   const m = [];
   for(let i=0;i<NUM_MONTHS;i++) m.push(emptyMonth());
 
-  // 1ヶ月目＝準備月
   Object.assign(m[0], {hr:150,office:10,promo:15,postage:5,comm:15,travel:10,exped:10,setup:50,misc:20,outCount:0,outAmount:0});
 
   const base = {office:10,promo:15,postage:5,comm:15,travel:10,exped:10,setup:0};
-  // 2ヶ月目：低価格40本
-  Object.assign(m[1], base, {hr:150,misc:10,outCount:0, outAmount:0, plan1:40});
-  // 3ヶ月目：低価格80本
-  Object.assign(m[2], base, {hr:150,misc:10,outCount:0, outAmount:0, plan1:80});
-  // 4ヶ月目：低価格120本（外注20本×@3000円＝60,000円をデフォルト設定）
-  Object.assign(m[3], base, {hr:150,misc:10,outCount:20, outAmount:20*3000, plan1:120});
-  // 5ヶ月目：低価格150＋標準10（1万×150＋3万×10＝180万、計160件）
-  Object.assign(m[4], base, {hr:150,misc:10,outCount:60, outAmount:60*3000, plan1:150, plan2:10});
-  // 6ヶ月目：低価格180＋標準15＋上位5（180＋45＋25＝250万、計200件）
-  Object.assign(m[5], base, {hr:150,misc:10,outCount:100, outAmount:100*3000, plan1:180, plan2:15, plan3:5});
-  // 7ヶ月目：低価格210＋標準20＋上位10（210＋60＋50＝320万、計240件）
-  Object.assign(m[6], base, {hr:150,misc:10,outCount:140, outAmount:140*3000, plan1:210, plan2:20, plan3:10});
+  Object.assign(m[1], base, {hr:150,misc:10,outCount:0, outAmount:0, paidLow:40});
+  Object.assign(m[2], base, {hr:150,misc:10,outCount:0, outAmount:0, paidLow:80});
+  Object.assign(m[3], base, {hr:150,misc:10,outCount:20, outAmount:20*3000, paidLow:120});
+  Object.assign(m[4], base, {hr:150,misc:10,outCount:60, outAmount:60*3000, paidLow:150, plan2:10});
+  Object.assign(m[5], base, {hr:150,misc:10,outCount:100, outAmount:100*3000, paidLow:180, plan2:15, plan3:5});
+  Object.assign(m[6], base, {hr:150,misc:10,outCount:140, outAmount:140*3000, paidLow:210, plan2:20, plan3:10});
 
   return m;
 }
 
-let monthsData = buildDefaultMonths();
-let settings = { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+// 新マスター（A/B/C）：ChatGPT作成の修正版CSV（cashflow24m_scenario{A,B,C}_revised_v1.csv）をそのまま埋め込み。
+// 大森氏原案の受注件数カーブは変更していない。廉価版は free（初回3件無料。毎月無料枠は復活しない）／
+// paid（通常1万円）／urgent（特急+1万円。無料枠でも課金）の内訳を保持する。
+const SCENARIO_A_MONTHS_RAW = [{freeLow:0,paidLow:0,urgentLow:0,plan2:0,plan3:0,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:6,comm:10,travel:20,exped:10,setup:165,misc:30,outCount:0,outAmount:0},{freeLow:40,paidLow:0,urgentLow:10,plan2:13,plan3:4,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:7.8,comm:10,travel:20,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:20,urgentLow:20,plan2:26,plan3:8,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:9.6,comm:10,travel:20,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:60,urgentLow:30,plan2:39,plan3:12,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:11.4,comm:10,travel:20,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:100,urgentLow:40,plan2:52,plan3:16,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:13.2,comm:10,travel:20,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:140,urgentLow:50,plan2:65,plan3:20,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:15,comm:15,travel:20,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:180,urgentLow:60,plan2:78,plan3:24,plan4:0,hr:195,welfare:27,office:10,promo:7.5,postage:18,comm:20,travel:25,exped:10,setup:20,misc:20,outCount:0,outAmount:0},{freeLow:60,paidLow:220,urgentLow:70,plan2:91,plan3:28,plan4:1,hr:195,welfare:27,office:10,promo:3.5,postage:16.8,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:260,urgentLow:80,plan2:104,plan3:32,plan4:1,hr:195,welfare:27,office:10,promo:3.5,postage:18.6,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:50,outAmount:950000},{freeLow:60,paidLow:300,urgentLow:90,plan2:117,plan3:36,plan4:1,hr:195,welfare:27,office:10,promo:3.5,postage:20.4,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:70,outAmount:1250000},{freeLow:60,paidLow:340,urgentLow:100,plan2:130,plan3:40,plan4:1,hr:240,welfare:34,office:15,promo:3.5,postage:22.2,comm:20,travel:30,exped:10,setup:95,misc:20,outCount:80,outAmount:1400000},{freeLow:60,paidLow:380,urgentLow:110,plan2:143,plan3:44,plan4:1,hr:240,welfare:34,office:15,promo:3.5,postage:24,comm:20,travel:30,exped:10,setup:0,misc:10,outCount:90,outAmount:1550000},{freeLow:60,paidLow:420,urgentLow:120,plan2:156,plan3:48,plan4:1,hr:270,welfare:37,office:15,promo:3.5,postage:25.8,comm:20,travel:30,exped:10,setup:0,misc:10,outCount:105,outAmount:1825000},{freeLow:60,paidLow:460,urgentLow:130,plan2:169,plan3:52,plan4:1,hr:315,welfare:44,office:15,promo:3.5,postage:27.6,comm:25,travel:35,exped:10,setup:20,misc:20,outCount:110,outAmount:1900000},{freeLow:60,paidLow:500,urgentLow:140,plan2:182,plan3:56,plan4:1,hr:315,welfare:44,office:15,promo:3.5,postage:29.4,comm:25,travel:35,exped:10,setup:0,misc:10,outCount:120,outAmount:2100000},{freeLow:60,paidLow:540,urgentLow:150,plan2:195,plan3:60,plan4:1,hr:360,welfare:51,office:20,promo:3.5,postage:31.2,comm:30,travel:40,exped:10,setup:120,misc:25,outCount:130,outAmount:2250000},{freeLow:60,paidLow:580,urgentLow:160,plan2:208,plan3:64,plan4:1,hr:360,welfare:51,office:20,promo:3.5,postage:33,comm:30,travel:40,exped:10,setup:0,misc:15,outCount:130,outAmount:2250000},{freeLow:60,paidLow:620,urgentLow:170,plan2:221,plan3:68,plan4:1,hr:405,welfare:58,office:20,promo:3.5,postage:34.8,comm:30,travel:45,exped:10,setup:20,misc:25,outCount:145,outAmount:2525000},{freeLow:60,paidLow:660,urgentLow:180,plan2:234,plan3:72,plan4:1,hr:405,welfare:58,office:20,promo:3.5,postage:36.6,comm:35,travel:40,exped:10,setup:0,misc:15,outCount:155,outAmount:2675000},{freeLow:60,paidLow:700,urgentLow:190,plan2:247,plan3:76,plan4:1,hr:405,welfare:58,office:20,promo:3.5,postage:38.4,comm:35,travel:40,exped:10,setup:0,misc:15,outCount:170,outAmount:2950000},{freeLow:60,paidLow:740,urgentLow:200,plan2:260,plan3:80,plan4:1,hr:450,welfare:65,office:25,promo:3.5,postage:40.2,comm:40,travel:50,exped:10,setup:145,misc:25,outCount:170,outAmount:2950000},{freeLow:60,paidLow:780,urgentLow:210,plan2:273,plan3:84,plan4:1,hr:450,welfare:65,office:25,promo:3.5,postage:42,comm:40,travel:50,exped:10,setup:0,misc:15,outCount:180,outAmount:3100000},{freeLow:60,paidLow:820,urgentLow:220,plan2:286,plan3:88,plan4:1,hr:450,welfare:65,office:25,promo:3.5,postage:43.8,comm:40,travel:50,exped:10,setup:0,misc:15,outCount:195,outAmount:3375000},{freeLow:60,paidLow:860,urgentLow:230,plan2:299,plan3:92,plan4:1,hr:450,welfare:65,office:25,promo:3.5,postage:45.6,comm:40,travel:50,exped:10,setup:0,misc:15,outCount:200,outAmount:3500000}];
+const SCENARIO_B_MONTHS_RAW = [{freeLow:0,paidLow:0,urgentLow:0,plan2:0,plan3:0,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:6,comm:10,travel:20,exped:10,setup:165,misc:30,outCount:0,outAmount:0},{freeLow:20,paidLow:0,urgentLow:5,plan2:6,plan3:2,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:7.8,comm:10,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:40,paidLow:0,urgentLow:10,plan2:12,plan3:4,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:9.6,comm:10,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:0,urgentLow:15,plan2:18,plan3:6,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:11.4,comm:10,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:20,urgentLow:20,plan2:24,plan3:8,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:13.2,comm:10,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:40,urgentLow:25,plan2:30,plan3:10,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:15,comm:10,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:60,urgentLow:30,plan2:36,plan3:12,plan4:0,hr:150,welfare:20,office:10,promo:7.5,postage:18,comm:15,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:80,urgentLow:35,plan2:42,plan3:14,plan4:1,hr:150,welfare:20,office:10,promo:3.5,postage:16.8,comm:15,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:100,urgentLow:40,plan2:48,plan3:16,plan4:1,hr:150,welfare:20,office:10,promo:3.5,postage:18.6,comm:15,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:120,urgentLow:45,plan2:54,plan3:18,plan4:1,hr:150,welfare:20,office:10,promo:3.5,postage:20.4,comm:15,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:140,urgentLow:50,plan2:60,plan3:20,plan4:1,hr:150,welfare:20,office:15,promo:3.5,postage:22.2,comm:15,travel:20,exped:10,setup:0,misc:5,outCount:0,outAmount:0},{freeLow:60,paidLow:160,urgentLow:55,plan2:66,plan3:22,plan4:1,hr:190,welfare:27,office:10,promo:3.5,postage:24,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:180,urgentLow:60,plan2:72,plan3:24,plan4:1,hr:205,welfare:27,office:10,promo:3.5,postage:25.8,comm:20,travel:25,exped:10,setup:20,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:200,urgentLow:65,plan2:78,plan3:26,plan4:1,hr:205,welfare:27,office:10,promo:3.5,postage:27.6,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:220,urgentLow:70,plan2:84,plan3:28,plan4:1,hr:205,welfare:27,office:10,promo:3.5,postage:29.4,comm:20,travel:25,exped:10,setup:0,misc:10,outCount:0,outAmount:0},{freeLow:60,paidLow:240,urgentLow:75,plan2:90,plan3:30,plan4:1,hr:205,welfare:27,office:10,promo:3.5,postage:31.2,comm:25,travel:25,exped:10,setup:0,misc:10,outCount:10,outAmount:150000},{freeLow:60,paidLow:260,urgentLow:80,plan2:96,plan3:32,plan4:1,hr:205,welfare:27,office:10,promo:3.5,postage:33,comm:25,travel:25,exped:10,setup:0,misc:15,outCount:30,outAmount:450000},{freeLow:60,paidLow:280,urgentLow:85,plan2:102,plan3:34,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:34.8,comm:25,travel:30,exped:10,setup:80,misc:25,outCount:50,outAmount:850000},{freeLow:60,paidLow:300,urgentLow:90,plan2:108,plan3:36,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:36.6,comm:30,travel:30,exped:10,setup:0,misc:15,outCount:50,outAmount:850000},{freeLow:60,paidLow:320,urgentLow:95,plan2:114,plan3:38,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:38.4,comm:30,travel:35,exped:10,setup:0,misc:15,outCount:50,outAmount:850000},{freeLow:60,paidLow:340,urgentLow:100,plan2:120,plan3:40,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:40.2,comm:30,travel:35,exped:10,setup:0,misc:15,outCount:50,outAmount:850000},{freeLow:60,paidLow:360,urgentLow:105,plan2:126,plan3:42,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:42,comm:30,travel:35,exped:10,setup:0,misc:15,outCount:50,outAmount:850000},{freeLow:60,paidLow:380,urgentLow:110,plan2:132,plan3:44,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:43.8,comm:35,travel:35,exped:10,setup:0,misc:15,outCount:70,outAmount:1250000},{freeLow:60,paidLow:400,urgentLow:115,plan2:138,plan3:46,plan4:1,hr:245,welfare:34,office:15,promo:3.5,postage:45.6,comm:35,travel:35,exped:10,setup:0,misc:15,outCount:70,outAmount:1250000}];
+const SCENARIO_C_MONTHS_RAW = [{freeLow:0,paidLow:0,urgentLow:0,plan2:0,plan3:0,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:6,comm:10,travel:20,exped:10,setup:165,misc:30,outCount:0,outAmount:0},{freeLow:30,paidLow:0,urgentLow:7.5,plan2:9.5,plan3:3,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:7.8,comm:10,travel:20,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:50,paidLow:10,urgentLow:15,plan2:19,plan3:6,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:9.6,comm:10,travel:20,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:60,paidLow:30,urgentLow:22.5,plan2:28.5,plan3:9,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:11.4,comm:10,travel:20,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:60,paidLow:60,urgentLow:30,plan2:38,plan3:12,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:13.2,comm:10,travel:20,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:60,paidLow:90,urgentLow:37.5,plan2:47.5,plan3:15,plan4:0,hr:150,welfare:20,office:10,promo:3.5,postage:15,comm:12.5,travel:20,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:60,paidLow:120,urgentLow:45,plan2:57,plan3:18,plan4:0,hr:150,welfare:23.5,office:10,promo:7.5,postage:18,comm:17.5,travel:22.5,exped:10,setup:10,misc:12.5,outCount:0,outAmount:0},{freeLow:60,paidLow:150,urgentLow:52.5,plan2:66.5,plan3:21,plan4:1,hr:150,welfare:23.5,office:10,promo:3.5,postage:16.8,comm:17.5,travel:22.5,exped:10,setup:0,misc:7.5,outCount:0,outAmount:0},{freeLow:60,paidLow:180,urgentLow:60,plan2:76,plan3:24,plan4:1,hr:150,welfare:23.5,office:10,promo:3.5,postage:18.6,comm:17.5,travel:22.5,exped:10,setup:0,misc:7.5,outCount:25,outAmount:475000},{freeLow:60,paidLow:210,urgentLow:67.5,plan2:85.5,plan3:27,plan4:1,hr:150,welfare:23.5,office:10,promo:3.5,postage:20.4,comm:17.5,travel:22.5,exped:10,setup:0,misc:7.5,outCount:35,outAmount:625000},{freeLow:60,paidLow:240,urgentLow:75,plan2:95,plan3:30,plan4:1,hr:150,welfare:27,office:10,promo:3.5,postage:22.2,comm:17.5,travel:25,exped:10,setup:47.5,misc:12.5,outCount:40,outAmount:700000},{freeLow:60,paidLow:270,urgentLow:82.5,plan2:104.5,plan3:33,plan4:1,hr:150,welfare:30.5,office:10,promo:3.5,postage:24,comm:20,travel:27.5,exped:10,setup:0,misc:10,outCount:45,outAmount:775000},{freeLow:60,paidLow:300,urgentLow:90,plan2:114,plan3:36,plan4:1,hr:190,welfare:32,office:10,promo:3.5,postage:25.8,comm:20,travel:27.5,exped:10,setup:10,misc:10,outCount:52.5,outAmount:912500},{freeLow:60,paidLow:330,urgentLow:97.5,plan2:123.5,plan3:39,plan4:1,hr:190,welfare:35.5,office:10,promo:3.5,postage:27.6,comm:22.5,travel:30,exped:10,setup:10,misc:15,outCount:55,outAmount:950000},{freeLow:60,paidLow:360,urgentLow:105,plan2:133,plan3:42,plan4:1,hr:190,welfare:35.5,office:10,promo:3.5,postage:29.4,comm:22.5,travel:30,exped:10,setup:0,misc:10,outCount:60,outAmount:1050000},{freeLow:60,paidLow:390,urgentLow:112.5,plan2:142.5,plan3:45,plan4:1,hr:190,welfare:39,office:10,promo:3.5,postage:31.2,comm:27.5,travel:32.5,exped:10,setup:60,misc:17.5,outCount:70,outAmount:1200000},{freeLow:60,paidLow:420,urgentLow:120,plan2:152,plan3:48,plan4:1,hr:230,welfare:39,office:15,promo:3.5,postage:33,comm:27.5,travel:32.5,exped:10,setup:0,misc:15,outCount:80,outAmount:1350000},{freeLow:60,paidLow:450,urgentLow:127.5,plan2:161.5,plan3:51,plan4:1,hr:230,welfare:46,office:15,promo:3.5,postage:34.8,comm:27.5,travel:37.5,exped:10,setup:50,misc:25,outCount:97.5,outAmount:1687500},{freeLow:60,paidLow:480,urgentLow:135,plan2:171,plan3:54,plan4:1,hr:230,welfare:46,office:15,promo:3.5,postage:36.6,comm:32.5,travel:35,exped:10,setup:0,misc:15,outCount:102.5,outAmount:1762500},{freeLow:60,paidLow:510,urgentLow:142.5,plan2:180.5,plan3:57,plan4:1,hr:270,welfare:46,office:15,promo:3.5,postage:38.4,comm:32.5,travel:37.5,exped:10,setup:0,misc:15,outCount:110,outAmount:1900000},{freeLow:60,paidLow:540,urgentLow:150,plan2:190,plan3:60,plan4:1,hr:270,welfare:49.5,office:15,promo:3.5,postage:40.2,comm:35,travel:42.5,exped:10,setup:72.5,misc:20,outCount:110,outAmount:1900000},{freeLow:60,paidLow:570,urgentLow:157.5,plan2:199.5,plan3:63,plan4:1,hr:270,welfare:49.5,office:15,promo:3.5,postage:42,comm:35,travel:42.5,exped:10,setup:0,misc:15,outCount:115,outAmount:1975000},{freeLow:60,paidLow:600,urgentLow:165,plan2:209,plan3:66,plan4:1,hr:270,welfare:49.5,office:15,promo:3.5,postage:43.8,comm:37.5,travel:42.5,exped:10,setup:0,misc:15,outCount:132.5,outAmount:2312500},{freeLow:60,paidLow:630,urgentLow:172.5,plan2:218.5,plan3:69,plan4:1,hr:310,welfare:49.5,office:15,promo:3.5,postage:45.6,comm:37.5,travel:42.5,exped:10,setup:0,misc:15,outCount:135,outAmount:2375000}];
+
+const SCENARIO_CSV_DEFAULTS = {
+  A: SCENARIO_A_MONTHS_RAW,
+  B: SCENARIO_B_MONTHS_RAW,
+  C: SCENARIO_C_MONTHS_RAW,
+};
+function buildDefaultMonths(scenario){
+  if(scenario && SCENARIO_CSV_DEFAULTS[scenario]){
+    return SCENARIO_CSV_DEFAULTS[scenario].map(row=>{
+      const m = emptyMonth();
+      Object.assign(m, row);
+      return m;
+    });
+  }
+  return buildLegacyDefaultMonths();
+}
+
+let monthsData = buildDefaultMonths('A');
+let settings = { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3.2,5.2,10], urgentSurchargeLow:1 };
 
 function monthLabel(i){ return i===0 ? '1ヶ月目（準備月）' : (i+1)+'ヶ月目'; }
 
@@ -484,7 +530,23 @@ function buildMonthCards(){
     card.className = 'month-card';
     card.id = 'card-'+i;
 
-    let bodyHtml = '<div class="cat-label">プラン別成約数</div>';
+    let bodyHtml = '<div class="cat-label">廉価版（無料枠／通常／特急）</div>';
+    bodyHtml += '<div class="plan-row">'+
+        '<div class="plan-name">無料<span class="price">初回3件まで（毎月復活なし）</span></div>'+
+        '<div class="plan-inputs"><input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-lowtier="freeLow" class="m-lowtier-input" value="'+monthsData[i].freeLow+'"><span class="unit">本</span></div>'+
+        '<div class="plan-sales">0円</div>'+
+      '</div>';
+    bodyHtml += '<div class="plan-row">'+
+        '<div class="plan-name">通常<span class="price" id="priceLabel-low-'+i+'"></span></div>'+
+        '<div class="plan-inputs"><input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-lowtier="paidLow" class="m-lowtier-input" value="'+monthsData[i].paidLow+'"><span class="unit">本</span></div>'+
+        '<div class="plan-sales" id="planSales-low-'+i+'">-</div>'+
+      '</div>';
+    bodyHtml += '<div class="plan-row">'+
+        '<div class="plan-name">特急<span class="price" id="priceLabel-urgent-'+i+'">（無料枠でも課金）</span></div>'+
+        '<div class="plan-inputs"><input type="text" inputmode="numeric" pattern="[0-9]*" data-m="'+i+'" data-lowtier="urgentLow" class="m-lowtier-input" value="'+monthsData[i].urgentLow+'"><span class="unit">本</span></div>'+
+        '<div class="plan-sales" id="planSales-urgent-'+i+'">-</div>'+
+      '</div>';
+    bodyHtml += '<div class="cat-label">プラン別成約数（標準／上位／プレミアム）</div>';
     PLAN_KEYS.forEach((k, pi)=>{
       bodyHtml += '<div class="plan-row">'+
         '<div class="plan-name">'+PLAN_NAMES[pi]+'<span class="price" id="priceLabel-'+pi+'-'+i+'"></span></div>'+
@@ -546,6 +608,7 @@ function render(){
   settings.paymentLagDays = parseFloat(document.getElementById('paymentLagDays').value) || 0;
   settings.outsourceUnitPrice = parseFloat(document.getElementById('outsourceUnitPrice').value) || 0;
   settings.prices = readPrices();
+  settings.urgentSurchargeLow = parseFloat(document.getElementById('urgentSurchargeLow').value) || 0;
   const lagMonths = Math.max(0, Math.ceil(settings.paymentLagDays/30));
 
   const sgaArr=[], salesArr=[], balArr=[], countArr=[];
@@ -553,16 +616,29 @@ function render(){
   for(let i=0;i<NUM_MONTHS;i++){
     const d = monthsData[i];
 
-    let salesTotal = 0, countTotal = 0;
+    // 廉価版：無料枠は0円、通常は単価、特急は無料枠でも別途課金（二重の基準単価は課金しない）
+    const freeLow = d.freeLow||0, paidLow = d.paidLow||0, urgentLow = d.urgentLow||0;
+    const lowSales = paidLow*settings.prices[0] + urgentLow*settings.urgentSurchargeLow;
+    const lowCount = freeLow + paidLow;
+    d.plan1 = lowCount; // 表示・CSV互換用の合計件数
+    let salesTotal = lowSales, countTotal = lowCount;
+    const lowSalesEl = document.getElementById('planSales-low-'+i);
+    if(lowSalesEl) lowSalesEl.textContent = fmtMoney(paidLow*settings.prices[0])+'万円';
+    const urgentSalesEl = document.getElementById('planSales-urgent-'+i);
+    if(urgentSalesEl) urgentSalesEl.textContent = '+'+fmtMoney(urgentLow*settings.urgentSurchargeLow)+'万円';
+    const lowPriceLabelEl = document.getElementById('priceLabel-low-'+i);
+    if(lowPriceLabelEl) lowPriceLabelEl.textContent = '単価 '+fmtMoney(settings.prices[0])+'万円';
+
     PLAN_KEYS.forEach((k, pi)=>{
+      const priceIdx = pi+1; // PLAN_KEYS=[plan2,plan3,plan4] → prices[1,2,3]
       const c = d[k] || 0;
-      const s = c * settings.prices[pi];
+      const s = c * settings.prices[priceIdx];
       salesTotal += s;
       countTotal += c;
       const salesEl = document.getElementById('planSales-'+pi+'-'+i);
       if(salesEl) salesEl.textContent = fmtMoney(s)+'万円';
       const priceLabelEl = document.getElementById('priceLabel-'+pi+'-'+i);
-      if(priceLabelEl) priceLabelEl.textContent = '単価 '+fmtMoney(settings.prices[pi])+'万円';
+      if(priceLabelEl) priceLabelEl.textContent = '単価 '+fmtMoney(settings.prices[priceIdx])+'万円';
     });
     d.sales = salesTotal;
     d.count = countTotal;
@@ -605,6 +681,16 @@ function render(){
   const useCum = viewMode==='accrual' ? accrualCum : cashCum;
   const useSalesDisp = viewMode==='accrual' ? salesArr : cashIn;
 
+  // CSVエクスポート等で参照する参考列（発生ベースP/L・資金繰りベースCash）を各月データに格納
+  for(let i=0;i<NUM_MONTHS;i++){
+    monthsData[i]._orders = countArr[i];
+    monthsData[i]._profit = accrualBal[i];
+    monthsData[i]._cumProfit = accrualCum[i];
+    monthsData[i]._cashIn = cashIn[i];
+    monthsData[i]._cashFlow = cashBal[i];
+    monthsData[i]._cumCash = cashCum[i];
+  }
+
   for(let i=0;i<NUM_MONTHS;i++){
     const mbEl = document.getElementById('mbal-'+i);
     const cbEl = document.getElementById('cbal-'+i);
@@ -630,11 +716,8 @@ function render(){
   }
   tbody.innerHTML = rows;
 
-  const totalSales = useSalesDisp.reduce((a,b)=>a+b,0);
   const totalSga = sgaArr.reduce((a,b)=>a+b,0);
   const finalCum = useCum[NUM_MONTHS-1];
-  document.getElementById('sum_sales').textContent = fmtMoney(totalSales)+' 万円';
-  document.getElementById('sum_sga').textContent = fmtMoney(totalSga)+' 万円';
   const balEl = document.getElementById('sum_balance');
   balEl.textContent = fmtMoney(finalCum)+' 万円';
   balEl.className = 'val ' + (finalCum>=0?'pos':'neg');
@@ -646,6 +729,39 @@ function render(){
   let worstIdx=0, worstVal=useCum[0];
   useCum.forEach((v,i)=>{ if(v<worstVal){worstVal=v; worstIdx=i;} });
   document.getElementById('worstPoint').textContent = monthLabel(worstIdx)+'　'+fmtMoney(worstVal)+' 万円';
+
+  // ── 24ヶ月総括：発生ベース(P/L)と資金繰りベース(Cash)を常に併記（トグルの影響を受けない） ──
+  const totalSalesAccrual = salesArr.reduce((a,b)=>a+b,0);
+  document.getElementById('kpi_sales').textContent = fmtMoney(totalSalesAccrual)+' 万円';
+  document.getElementById('kpi_sga').textContent = fmtMoney(totalSga)+' 万円';
+
+  const plFinal = accrualCum[NUM_MONTHS-1];
+  const plEl = document.getElementById('kpi_plCum');
+  plEl.textContent = fmtMoney(plFinal)+' 万円';
+  plEl.className = 'val ' + (plFinal>=0?'pos':'neg');
+
+  let plBeMonth = '未達（24ヶ月以内に黒字転換なし）';
+  for(let i=0;i<NUM_MONTHS;i++){ if(accrualCum[i] >= 0){ plBeMonth = monthLabel(i); break; } }
+  document.getElementById('kpi_plBreakeven').textContent = plBeMonth;
+
+  let cashWorstIdx=0, cashWorstVal=cashCum[0];
+  cashCum.forEach((v,i)=>{ if(v<cashWorstVal){cashWorstVal=v; cashWorstIdx=i;} });
+  const worstCashEl = document.getElementById('kpi_worstCash');
+  worstCashEl.textContent = fmtMoney(cashWorstVal)+' 万円';
+  worstCashEl.className = 'val ' + (cashWorstVal>=0?'pos':'neg');
+  document.getElementById('kpi_worstCashMonth').textContent = monthLabel(cashWorstIdx);
+
+  let cashBeMonth = '未達（24ヶ月以内に黒字転換なし）';
+  for(let i=0;i<NUM_MONTHS;i++){ if(cashCum[i] >= 0){ cashBeMonth = monthLabel(i); break; } }
+  document.getElementById('kpi_cashBreakeven').textContent = cashBeMonth;
+
+  const cashFinal = cashCum[NUM_MONTHS-1];
+  const cashCumEl = document.getElementById('kpi_cashCum');
+  cashCumEl.textContent = fmtMoney(cashFinal)+' 万円';
+  cashCumEl.className = 'val ' + (cashFinal>=0?'pos':'neg');
+
+  document.getElementById('kpi_m24Sales').textContent = fmtMoney(salesArr[NUM_MONTHS-1])+' 万円';
+  document.getElementById('kpi_m24Orders').textContent = fmt(countArr[NUM_MONTHS-1])+' 件';
 
   drawChart(useCum);
   if(!suppressSave) saveToStorage();
@@ -689,10 +805,11 @@ function confirmReset(){
 }
 function resetAll(){
   suppressSave = true;
-  monthsData = buildDefaultMonths();
+  monthsData = buildDefaultMonths(currentScenario);
   document.getElementById('paymentLagDays').value = 30;
   document.getElementById('outsourceUnitPrice').value = 3000;
-  PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = [1,3,5,10][i]);
+  PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = [1,3.2,5.2,10][i]);
+  document.getElementById('urgentSurchargeLow').value = 1;
   localStorage.removeItem(storageKey());
   buildMonthCards();
   suppressSave = false;
@@ -701,9 +818,9 @@ function resetAll(){
 }
 
 function copyResults(){
-  const lines = ['【24ヶ月収支推移トラッカー】表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
+  const lines = ['【24ヶ月収支推移トラッカー】シナリオ'+currentScenario+'　表示モード：'+(viewMode==='accrual'?'発生ベース':'資金繰りベース')];
   lines.push('入金サイト: '+document.getElementById('paymentLagDays').value+'日 / 外注単価: '+document.getElementById('outsourceUnitPrice').value+'円');
-  lines.push('単価：低価格'+document.getElementById('price1').value+'万 / 標準'+document.getElementById('price2').value+'万 / 上位'+document.getElementById('price3').value+'万 / プレミアム'+document.getElementById('price4').value+'万');
+  lines.push('単価：廉価版通常'+document.getElementById('price1').value+'万（特急+'+document.getElementById('urgentSurchargeLow').value+'万） / 標準'+document.getElementById('price2').value+'万 / 上位'+document.getElementById('price3').value+'万 / プレミアム'+document.getElementById('price4').value+'万');
   lines.push('');
   const rows = document.querySelectorAll('#summaryBody tr');
   rows.forEach(tr=>{
@@ -711,11 +828,15 @@ function copyResults(){
     lines.push(cells[0]+' | '+cells[1]+'件 | 売上'+cells[2]+'万 | 販管費'+cells[3]+'万 | 単月'+cells[4]+'万 | 累計'+cells[5]+'万');
   });
   lines.push('');
-  lines.push('累計売上: '+document.getElementById('sum_sales').textContent);
-  lines.push('累計販管費: '+document.getElementById('sum_sga').textContent);
-  lines.push(document.getElementById('sum_balance_label').textContent+': '+document.getElementById('sum_balance').textContent);
-  lines.push('黒字転換した月: '+document.getElementById('breakevenMonth').textContent);
-  lines.push('累計収支のボトム: '+document.getElementById('worstPoint').textContent);
+  lines.push('24ヶ月累計売上: '+document.getElementById('kpi_sales').textContent);
+  lines.push('24ヶ月累計販管費: '+document.getElementById('kpi_sga').textContent);
+  lines.push('24ヶ月累計P/L（発生ベース）: '+document.getElementById('kpi_plCum').textContent);
+  lines.push('P/L累積黒字化月: '+document.getElementById('kpi_plBreakeven').textContent);
+  lines.push('最大資金不足額: '+document.getElementById('kpi_worstCash').textContent+'（'+document.getElementById('kpi_worstCashMonth').textContent+'）');
+  lines.push('Cash累積黒字化月: '+document.getElementById('kpi_cashBreakeven').textContent);
+  lines.push('24ヶ月累計Cash（資金繰りベース）: '+document.getElementById('kpi_cashCum').textContent);
+  lines.push('24ヶ月目月商: '+document.getElementById('kpi_m24Sales').textContent);
+  lines.push('24ヶ月目受注件数: '+document.getElementById('kpi_m24Orders').textContent);
 
   const text = lines.join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -738,14 +859,34 @@ function saveToStorage(){
 // 既存データ互換：outAmount(外注金額)が未設定の月は、
 // 従来の前提単価@3000円で自動補完する（既存の外注費実績を変えないため）
 const LEGACY_OUTSOURCE_UNIT_PRICE = 3000;
+// 既存データ互換：free/paid/urgentの内訳が無い旧データ（plan1のみ）は、
+// 全件「通常（有料）」として扱う＝旧ロジック（廉価版単価1.0万のみ）と同じ計算結果になる。
 function normalizeMonthsData(arr){
   if(!Array.isArray(arr)) return arr;
   arr.forEach(d=>{
-    if(d && (d.outAmount === undefined || d.outAmount === null)){
+    if(!d) return;
+    if(d.outAmount === undefined || d.outAmount === null){
       d.outAmount = (d.outCount||0) * LEGACY_OUTSOURCE_UNIT_PRICE;
     }
+    if(d.paidLow === undefined && d.freeLow === undefined && d.urgentLow === undefined){
+      d.paidLow = d.plan1 || 0;
+      d.freeLow = 0;
+      d.urgentLow = 0;
+    } else {
+      d.paidLow = d.paidLow || 0;
+      d.freeLow = d.freeLow || 0;
+      d.urgentLow = d.urgentLow || 0;
+    }
+    d.plan1 = d.freeLow + d.paidLow;
   });
   return arr;
+}
+function normalizeSettings(s){
+  if(!s) return s;
+  if(s.urgentSurchargeLow === undefined || s.urgentSurchargeLow === null){
+    s.urgentSurchargeLow = 1; // 旧設定データ互換：特急追加料金の既定値
+  }
+  return s;
 }
 
 function loadFromStorage(){
@@ -754,7 +895,7 @@ function loadFromStorage(){
     if(!raw) return false;
     const data = JSON.parse(raw);
     if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = normalizeMonthsData(data.monthsData);
-    if(data.settings) settings = data.settings;
+    if(data.settings) settings = normalizeSettings(data.settings);
     if(data.viewMode) viewMode = data.viewMode;
     return true;
   }catch(e){ return false; }
@@ -790,6 +931,18 @@ document.addEventListener('input', function(e){
     return;
   }
 
+  if(el.classList.contains('m-lowtier-input')){
+    const mIdx = parseInt(el.dataset.m,10);
+    const key = el.dataset.lowtier;
+    let raw = el.value.replace(/[^0-9.]/g,'');
+    const firstDot = raw.indexOf('.');
+    if(firstDot!==-1){ raw = raw.slice(0,firstDot+1)+raw.slice(firstDot+1).replace(/\./g,''); }
+    if(raw !== el.value) el.value = raw;
+    monthsData[mIdx][key] = parseFloat(raw) || 0;
+    render();
+    return;
+  }
+
   if(el.classList.contains('m-input')){
     const mIdx = parseInt(el.dataset.m,10);
     const key = el.dataset.k;
@@ -802,7 +955,7 @@ document.addEventListener('input', function(e){
     return;
   }
 
-  if(['paymentLagDays','outsourceUnitPrice','price1','price2','price3','price4'].includes(el.id)){
+  if(['paymentLagDays','outsourceUnitPrice','price1','price2','price3','price4','urgentSurchargeLow'].includes(el.id)){
     let v = parseFloat(el.value);
     if(!isNaN(v) && v<0){ el.value=0; }
     render();
@@ -842,7 +995,9 @@ function setCloudStatus(text, warn){
 function cloudPath(){ return 'rooms/' + ROOM_ID + '/scenarios/' + currentScenario + '/data'; }
 function scenarioDisplayName(){
   const custom = document.getElementById('scenarioLabel').value.trim();
-  return custom ? ('シナリオ' + currentScenario + '（' + custom + '）') : ('シナリオ' + currentScenario);
+  const tag = (SCENARIO_META[currentScenario] && SCENARIO_META[currentScenario].label) || '';
+  const base = tag ? ('シナリオ' + currentScenario + '（' + tag + '）') : ('シナリオ' + currentScenario);
+  return custom ? (base + '［' + custom + '］') : base;
 }
 
 // ── 共通：確認ダイアログ ──
@@ -874,12 +1029,31 @@ function confirmLoad(){
 function confirmCsvExport(){
   showConfirm(scenarioDisplayName() + 'のデータをCSVとして保存しますか？', csvExport);
 }
-const CSV_COLUMNS = ['month','rate','plan1','plan2','plan3','plan4','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount','outAmount'];
+// エクスポート列：ChatGPT作成の修正版CSV（cashflow24m_scenario{A,B,C}_revised_v1.csv）と同じ並び。
+// orders/plan1/sales/expense/profit/cum_profit/cash_in/cash_flow/cum_cash は参考値（自動計算）で、
+// 取込み時は無視して free_low/paid_low/urgent_low 等の入力列のみ再計算に用いる。
+const CSV_EXPORT_COLUMNS = ['month','orders','plan1','free_low','paid_low','urgent_low','plan2','plan3','plan4','sales','expense','profit','cum_profit','cash_in','cash_flow','cum_cash','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount','outAmount'];
+const CSV_INPUT_COLUMN_MAP = { free_low:'freeLow', paid_low:'paidLow', urgent_low:'urgentLow' };
 function csvExport(){
-  const lines = [CSV_COLUMNS.join(',')];
+  const lines = [CSV_EXPORT_COLUMNS.join(',')];
   for(let i=0;i<NUM_MONTHS;i++){
     const d = monthsData[i] || {};
-    const row = CSV_COLUMNS.map(k=> k==='month' ? (i+1) : (d[k]||0));
+    const sgaTotal = (d.hr||0)+(d.welfare||0)+(d.office||0)+(d.promo||0)+(d.postage||0)+(d.comm||0)+(d.travel||0)+(d.exped||0)+(d.setup||0)+(d.misc||0)+((d.outAmount||0)/10000);
+    const row = CSV_EXPORT_COLUMNS.map(k=>{
+      if(k==='month') return i+1;
+      if(k==='orders') return d._orders!==undefined ? d._orders : d.count||0;
+      if(k==='free_low') return d.freeLow||0;
+      if(k==='paid_low') return d.paidLow||0;
+      if(k==='urgent_low') return d.urgentLow||0;
+      if(k==='sales') return d.sales||0;
+      if(k==='expense') return sgaTotal;
+      if(k==='profit') return d._profit!==undefined ? d._profit : (d.sales||0)-sgaTotal;
+      if(k==='cum_profit') return d._cumProfit!==undefined ? d._cumProfit : 0;
+      if(k==='cash_in') return d._cashIn!==undefined ? d._cashIn : 0;
+      if(k==='cash_flow') return d._cashFlow!==undefined ? d._cashFlow : 0;
+      if(k==='cum_cash') return d._cumCash!==undefined ? d._cumCash : 0;
+      return d[k]||0;
+    });
     lines.push(row.join(','));
   }
   const csv = lines.join('\n');
@@ -908,10 +1082,15 @@ function handleCsvFile(event){
       const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
       const header = lines[0].split(',');
       const hasAmountColumn = header.indexOf('outAmount') >= 0;
+      const hasLowTierSplit = header.indexOf('free_low')>=0 || header.indexOf('paid_low')>=0 || header.indexOf('urgent_low')>=0;
+      // 取込む列＝入力の元データのみ。sales/expense/profit/cum_profit/cash_in/cash_flow/cum_cash/orders/plan1は
+      // 参考値のため取込まず、アプリ側の計算式で再計算する（二重計上・旧単価の混入を防ぐ）。
+      const INPUT_COLUMNS = ['plan2','plan3','plan4','hr','welfare','office','promo','postage','comm','travel','exped','setup','misc','outCount','outAmount'];
       const newMonths = [];
       for(let i=0;i<NUM_MONTHS;i++){
         const m = emptyMonth();
         if(!hasAmountColumn) m.outAmount = undefined; // 旧形式CSV：正規化で自動補完させる
+        if(!hasLowTierSplit){ m.freeLow=undefined; m.paidLow=undefined; m.urgentLow=undefined; } // 正規化でplan1から補完
         newMonths.push(m);
       }
       for(let r=1;r<lines.length;r++){
@@ -919,11 +1098,19 @@ function handleCsvFile(event){
         const monthNum = parseInt(cells[header.indexOf('month')],10);
         if(!monthNum || monthNum<1 || monthNum>NUM_MONTHS) continue;
         const idx = monthNum - 1;
-        CSV_COLUMNS.forEach(k=>{
-          if(k==='month') return;
+        INPUT_COLUMNS.forEach(k=>{
           const ci = header.indexOf(k);
           if(ci>=0) newMonths[idx][k] = parseFloat(cells[ci]) || 0;
         });
+        if(hasLowTierSplit){
+          Object.keys(CSV_INPUT_COLUMN_MAP).forEach(csvKey=>{
+            const ci = header.indexOf(csvKey);
+            if(ci>=0) newMonths[idx][CSV_INPUT_COLUMN_MAP[csvKey]] = parseFloat(cells[ci]) || 0;
+          });
+        } else {
+          const ci = header.indexOf('plan1');
+          if(ci>=0) newMonths[idx].paidLow = parseFloat(cells[ci]) || 0;
+        }
       }
       monthsData = normalizeMonthsData(newMonths);
       buildMonthCards();
@@ -973,12 +1160,13 @@ function loadFromCloud(silent){
     if(snap.exists()){
       const data = snap.val();
       if(data.monthsData && data.monthsData.length===NUM_MONTHS) monthsData = normalizeMonthsData(data.monthsData);
-      if(data.settings) settings = data.settings;
+      if(data.settings) settings = normalizeSettings(data.settings);
       if(data.viewMode) viewMode = data.viewMode;
       suppressSave = true;
       document.getElementById('paymentLagDays').value = settings.paymentLagDays;
       document.getElementById('outsourceUnitPrice').value = settings.outsourceUnitPrice;
-      PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = (settings.prices && settings.prices[i]!==undefined) ? settings.prices[i] : [1,3,5,10][i]);
+      document.getElementById('urgentSurchargeLow').value = settings.urgentSurchargeLow!==undefined ? settings.urgentSurchargeLow : 1;
+      PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = (settings.prices && settings.prices[i]!==undefined) ? settings.prices[i] : [1,3.2,5.2,10][i]);
       if(typeof data.scenarioLabel === 'string'){
         document.getElementById('scenarioLabel').value = data.scenarioLabel;
         saveScenarioLabel(currentScenario, data.scenarioLabel);
@@ -1013,17 +1201,19 @@ function loadScenario(scenario){
     document.getElementById('tab'+s).classList.toggle('active', scenario===s);
   });
   document.getElementById('scenarioLabel').value = loadScenarioLabel(scenario);
+  document.getElementById('scenarioComment').textContent = (SCENARIO_META[scenario] && SCENARIO_META[scenario].comment) || '';
 
   // このシナリオのデフォルト値からスタートし、ローカルキャッシュがあれば上書き
-  monthsData = buildDefaultMonths();
-  settings = { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3,5,10] };
+  monthsData = buildDefaultMonths(scenario);
+  settings = { paymentLagDays:30, outsourceUnitPrice:3000, prices:[1,3.2,5.2,10], urgentSurchargeLow:1 };
   viewMode = 'accrual';
   loadFromStorage();
 
   suppressSave = true;
   document.getElementById('paymentLagDays').value = settings.paymentLagDays;
   document.getElementById('outsourceUnitPrice').value = settings.outsourceUnitPrice;
-  PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = (settings.prices && settings.prices[i]!==undefined) ? settings.prices[i] : [1,3,5,10][i]);
+  document.getElementById('urgentSurchargeLow').value = settings.urgentSurchargeLow!==undefined ? settings.urgentSurchargeLow : 1;
+  PRICE_IDS.forEach((id,i)=> document.getElementById(id).value = (settings.prices && settings.prices[i]!==undefined) ? settings.prices[i] : [1,3.2,5.2,10][i]);
   buildMonthCards();
   suppressSave = false;
   setViewMode(viewMode);
