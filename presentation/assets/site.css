@@ -163,3 +163,13 @@
   #slide-09 .sales-track:before{display:none}
   #slide-09 .slide-links{left:clamp(20px,7.5vw,76px);right:clamp(20px,7.5vw,76px);justify-content:flex-start;gap:18px;flex-wrap:wrap}
 }
+@media(min-width:701px){
+  #slide-14{padding-top:64px;padding-bottom:46px}
+  #slide-14 .slide-head{margin-bottom:16px}
+  #slide-14 .slide-head h2{font-size:clamp(32px,3.8vw,48px);max-width:100%}
+  #slide-14 .closing-kpis{margin-bottom:14px}
+  #slide-14 .future-grid{gap:16px}
+  #slide-14 .future-copy,#slide-14 .investor-questions{padding:18px 20px}
+  #slide-14 .future-copy h3{font-size:22px;margin:0 0 10px}
+  #slide-14 .future-copy p{font-size:18px;line-height:1.5;margin:0 0 10px}
+}
