@@ -1,3 +1,3 @@
-TOWAUTA memorial WEB v1.7.3 investor-facing site.
-This subdirectory contains the investor-facing presentation only; S-review materials and the Q&A page are not published here.
+TOWAUTA memorial WEB v1.7.4 investor-facing site.
+This subdirectory contains the 14-slide investor presentation and selected support pages. S-review materials and the Q&A page are not published here.
 GitHub Pages URL: https://s365963w.github.io/memorialsongmovie/presentation/
