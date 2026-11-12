@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#173432">
+  <title>資料を読む｜TOWAUTA memorial</title>
+  <link rel="stylesheet" href="viewer.css?v=20261113-1">
+  <script src="viewer.js?v=20261113-1" defer></script>
+</head>
+<body>
+  <header class="reader-header" id="reader-header">
+    <div class="title-row">
+      <a class="back" href="./">‹ 資料一覧</a>
+      <h1 id="document-title">資料を読み込み中…</h1>
+      <a id="download" class="download" hidden download>PDFを保存 ↓</a>
+    </div>
+    <nav class="toolbar" aria-label="資料の表示操作" hidden id="toolbar">
+      <div class="page-controls">
+        <button id="previous" type="button" aria-label="前のページ">‹</button>
+        <label class="page-label" for="page-select">ページ</label>
+        <select id="page-select" aria-label="表示するページ"></select>
+        <span id="page-total"></span>
+        <button id="next" type="button" aria-label="次のページ">›</button>
+      </div>
+      <div class="zoom-controls">
+        <button id="zoom-out" type="button" aria-label="縮小">−</button>
+        <output id="zoom-value" aria-live="polite">100%</output>
+        <button id="zoom-in" type="button" aria-label="拡大">＋</button>
+        <button id="fit" type="button">幅に合わせる</button>
+      </div>
+    </nav>
+  </header>
+  <p class="reader-hint" id="reader-hint" hidden>下へスクロールして読めます。細かい文字は「＋」で拡大できます。</p>
+  <p id="status" class="status" role="status">資料を読み込んでいます。</p>
+  <main id="reader" aria-label="資料のページ" hidden><div class="pages" id="pages"></div></main>
+  <noscript>
+    <div class="status">サイト内表示にはJavaScriptが必要です。<a href="./">資料一覧に戻る</a>か、PDFを保存してご覧ください。</div>
+  </noscript>
+  <footer> TOWAUTA memorial <span aria-hidden="true">｜</span> 資料閲覧ポータル</footer>
+</body>
+</html>
