@@ -68,10 +68,6 @@
       const doc = documents[slug];
       document.title = `${doc.title}｜TOWAUTA memorial`;
       byId('document-title').textContent = doc.title;
-      const download = byId('download');
-      download.href = doc.pdf;
-      download.download = `TOWAUTA_${slug}.pdf`;
-      download.hidden = false;
       byId('page-total').textContent = `/ ${doc.pages.length}`;
       doc.pages.forEach((page, index) => {
         const number = index + 1;
@@ -89,11 +85,7 @@
         image.addEventListener('error', () => {
           const error = document.createElement('p');
           error.className = 'image-error';
-          error.append('このページを読み込めませんでした。通信状況を確認して再読み込みするか、');
-          const link = document.createElement('a');
-          link.href = doc.pdf;
-          link.textContent = '元のPDFを開いてください。';
-          error.append(link);
+          error.textContent = 'このページを読み込めませんでした。通信状況を確認して再読み込みしてください。';
           image.replaceWith(error);
         });
         const caption = document.createElement('figcaption');
@@ -128,7 +120,7 @@
       window.addEventListener('scroll', trackScroll, {passive: true});
     } catch (error) {
       byId('document-title').textContent = '資料を読み込めませんでした';
-      status.textContent = '通信状況を確認して再読み込みしてください。資料一覧から元のPDFを保存することもできます。';
+      status.textContent = '通信状況を確認して再読み込みしてください。資料一覧から開き直すこともできます。';
     }
   }
   start();
