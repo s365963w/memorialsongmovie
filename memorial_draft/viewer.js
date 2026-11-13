@@ -56,7 +56,7 @@
   }
   async function start() {
     try {
-      const response = await fetch('documents.json?v=20261113-1');
+      const response = await fetch('documents.json?v=v045-20261113');
       if (!response.ok) throw new Error('manifest');
       const documents = await response.json();
       const slug = new URLSearchParams(location.search).get('doc');
